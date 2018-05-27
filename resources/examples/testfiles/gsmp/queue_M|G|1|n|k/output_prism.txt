@@ -1,0 +1,31 @@
+Exporting list of reachable states in plain text format below:
+(thinkingCustomers,queueSize,serving)
+0:(5,5,1)
+1:(6,4,1)
+2:(7,3,1)
+3:(8,2,1)
+4:(9,1,1)
+5:(10,0,0)
+
+Exporting transition matrix in plain text format below:
+GSMP with 6 events:
+Event "service"=Dirac distribution(1.0)
+0: {1=1.0}, 1: {2=1.0}, 2: {3=1.0}, 3: {4=1.0}, 4: {5=1.0}
+Event "<CTMCevent_[thinking] thinkingCustomers>0&queueSize<5-> 0.9*thinkingCustomers : (serving'=1) & (queueSize'=queueSize+1) & (thinkingCustomers'=thinkingCustomers-1)>"=Exponential distribution(9.0)
+5: {4=1.0}
+Event "<CTMCevent_[thinking] thinkingCustomers>0&queueSize<5-> 0.9*thinkingCustomers : (serving'=1) & (queueSize'=queueSize+1) & (thinkingCustomers'=thinkingCustomers-1)>"=Exponential distribution(8.1)
+4: {3=1.0}
+Event "<CTMCevent_[thinking] thinkingCustomers>0&queueSize<5-> 0.9*thinkingCustomers : (serving'=1) & (queueSize'=queueSize+1) & (thinkingCustomers'=thinkingCustomers-1)>"=Exponential distribution(7.2)
+3: {2=1.0}
+Event "<CTMCevent_[thinking] thinkingCustomers>0&queueSize<5-> 0.9*thinkingCustomers : (serving'=1) & (queueSize'=queueSize+1) & (thinkingCustomers'=thinkingCustomers-1)>"=Exponential distribution(6.3)
+2: {1=1.0}
+Event "<CTMCevent_[thinking] thinkingCustomers>0&queueSize<5-> 0.9*thinkingCustomers : (serving'=1) & (queueSize'=queueSize+1) & (thinkingCustomers'=thinkingCustomers-1)>"=Exponential distribution(5.4)
+1: {0=1.0}
+
+Omitting state reward export as there are no reward structures
+
+Omitting transition reward export as there are no reward structures
+
+Exporting labels and satisfying states in plain text format below:
+0="init" 1="deadlock"
+5: 0

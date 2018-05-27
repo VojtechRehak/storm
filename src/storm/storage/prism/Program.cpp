@@ -2,12 +2,15 @@
 
 #include <algorithm>
 #include <sstream>
+#include <iostream>
 #include <boost/algorithm/string/join.hpp>
 
 #include "storm/storage/jani/Model.h"
 #include "storm/storage/jani/Property.h"
 
 #include "storm/storage/expressions/ExpressionManager.h"
+#include "storm/settings/SettingsManager.h"
+#include "storm/settings/modules/IOSettings.h"
 #include "storm/utility/macros.h"
 #include "storm/utility/solver.h"
 #include "storm/utility/vector.h"
@@ -82,6 +85,13 @@ namespace storm {
                         uint_fast64_t index = program.getActionIndex(action);
                         auto it = subSynchronizingActionIndices.find(index);
                         STORM_LOG_THROW(it != subSynchronizingActionIndices.end(), storm::exceptions::WrongFormatException, "Cannot hide action '" << action << "', because module '" << composition.getSubcomposition() << " does not have this action.");
+                        for (auto const& module : program.getModules()) {
+                            for (auto const& command : module.getCommands()) {
+                                if (command.getActionIndex() == index) {
+                                    STORM_LOG_WARN("hiding synchronization label of a slave command, is this intentional?");
+                                }
+                            }
+                        }
                         subSynchronizingActionIndices.erase(it);
                     }
                 }
@@ -136,7 +146,7 @@ namespace storm {
             std::set<std::string> appearingModules;
         };
         
-        Program::Program(std::shared_ptr<storm::expressions::ExpressionManager> manager, ModelType modelType, std::vector<Constant> const& constants, std::vector<BooleanVariable> const& globalBooleanVariables, std::vector<IntegerVariable> const& globalIntegerVariables, std::vector<Formula> const& formulas, std::vector<Module> const& modules, std::map<std::string, uint_fast64_t> const& actionToIndexMap, std::vector<RewardModel> const& rewardModels, std::vector<Label> const& labels, boost::optional<InitialConstruct> const& initialConstruct, boost::optional<SystemCompositionConstruct> const& compositionConstruct, bool prismCompatibility, std::string const& filename, uint_fast64_t lineNumber, bool finalModel)
+        Program::Program(std::shared_ptr<storm::expressions::ExpressionManager> manager, ModelType modelType, std::vector<Constant> const& constants, std::vector<BooleanVariable> const& globalBooleanVariables, std::vector<IntegerVariable> const& globalIntegerVariables, std::vector<Formula> const& formulas, std::vector<Module> const& modules, std::map<std::string, uint_fast64_t> const& actionToIndexMap, std::vector<RewardModel> const& rewardModels, std::vector<Label> const& labels, boost::optional<InitialConstruct> const& initialConstruct, boost::optional<SystemCompositionConstruct> const& compositionConstruct, std::string const& filename, uint_fast64_t lineNumber, bool finalModel)
         : LocatedInformation(filename, lineNumber), manager(manager),
         modelType(modelType), constants(constants), constantToIndexMap(),
         globalBooleanVariables(globalBooleanVariables), globalBooleanVariableToIndexMap(),
@@ -144,7 +154,7 @@ namespace storm {
         formulas(formulas), formulaToIndexMap(), modules(modules), moduleToIndexMap(),
         rewardModels(rewardModels), rewardModelToIndexMap(), systemCompositionConstruct(compositionConstruct),
         labels(labels), labelToIndexMap(), actionToIndexMap(actionToIndexMap), indexToActionMap(), actions(),
-        synchronizingActionIndices(), actionIndicesToModuleIndexMap(), variableToModuleIndexMap(), prismCompatibility(prismCompatibility)
+        synchronizingActionIndices(), actionIndicesToModuleIndexMap(), variableToModuleIndexMap()
         {
             
             // Start by creating the necessary mappings from the given ones.
@@ -164,7 +174,7 @@ namespace storm {
             if (finalModel) {
                 // If the model is supposed to be a CTMC, but contains probabilistic commands, we transform them to Markovian
                 // commands and issue a warning.
-                if (modelType == storm::prism::Program::ModelType::CTMC && prismCompatibility) {
+                if (modelType == storm::prism::Program::ModelType::CTMC && storm::settings::getModule<storm::settings::modules::IOSettings>().isPrismCompatibilityEnabled()) {
                     bool hasProbabilisticCommands = false;
                     for (auto& module : this->modules) {
                         for (auto& command : module.getCommands()) {
@@ -186,7 +196,8 @@ namespace storm {
         }
         
         bool Program::isDiscreteTimeModel() const {
-            return modelType == ModelType::DTMC || modelType == ModelType::MDP;
+            return modelType == ModelType::DTMC || modelType == ModelType::MDP 
+            || modelType == ModelType::GSMP;
         }
         
         bool Program::isDeterministicModel() const {
@@ -622,7 +633,7 @@ namespace storm {
         std::vector<Label> const& Program::getLabels() const {
             return this->labels;
         }
-        
+
         std::vector<storm::expressions::Expression> Program::getAllGuards(bool negated) const {
             std::vector<storm::expressions::Expression> allGuards;
             for (auto const& module : modules) {
@@ -687,7 +698,7 @@ namespace storm {
                 newModules.push_back(module.restrictCommands(indexSet));
             }
             
-            return Program(this->manager, this->getModelType(), this->getConstants(), this->getGlobalBooleanVariables(), this->getGlobalIntegerVariables(), this->getFormulas(), newModules, this->getActionNameToIndexMapping(), this->getRewardModels(), this->getLabels(), this->getOptionalInitialConstruct(), this->getOptionalSystemCompositionConstruct(), prismCompatibility);
+            return Program(this->manager, this->getModelType(), this->getConstants(), this->getGlobalBooleanVariables(), this->getGlobalIntegerVariables(), this->getFormulas(), newModules, this->getActionNameToIndexMapping(), this->getRewardModels(), this->getLabels(), this->getOptionalInitialConstruct(), this->getOptionalSystemCompositionConstruct());
         }
         
         void Program::createMappings() {
@@ -781,7 +792,7 @@ namespace storm {
                 }
             }
             
-            return Program(this->manager, this->getModelType(), newConstants, this->getGlobalBooleanVariables(), this->getGlobalIntegerVariables(), this->getFormulas(), this->getModules(), this->getActionNameToIndexMapping(), this->getRewardModels(), this->getLabels(), this->getOptionalInitialConstruct(), this->getOptionalSystemCompositionConstruct(), prismCompatibility);
+            return Program(this->manager, this->getModelType(), newConstants, this->getGlobalBooleanVariables(), this->getGlobalIntegerVariables(), this->getFormulas(), this->getModules(), this->getActionNameToIndexMapping(), this->getRewardModels(), this->getLabels(), this->getOptionalInitialConstruct(), this->getOptionalSystemCompositionConstruct());
         }
         
         Program Program::substituteConstants() const {
@@ -844,7 +855,7 @@ namespace storm {
                 newLabels.emplace_back(label.substitute(constantSubstitution));
             }
             
-            return Program(this->manager, this->getModelType(), newConstants, newBooleanVariables, newIntegerVariables, newFormulas, newModules, this->getActionNameToIndexMapping(), newRewardModels, newLabels, newInitialConstruct, this->getOptionalSystemCompositionConstruct(), prismCompatibility);
+            return Program(this->manager, this->getModelType(), newConstants, newBooleanVariables, newIntegerVariables, newFormulas, newModules, this->getActionNameToIndexMapping(), newRewardModels, newLabels, newInitialConstruct, this->getOptionalSystemCompositionConstruct());
         }
         
         void Program::checkValidity(Program::ValidityCheckLevel lvl) const {
@@ -1024,6 +1035,28 @@ namespace storm {
                     variables.insert(variable.getExpressionVariable());
                     all.insert(variable.getExpressionVariable());
                 }
+
+                for (auto const& variable : module.getEventVariables()) {
+
+                    STORM_LOG_THROW(variable.getDistributionExpression().hasDistributionType(), storm::exceptions::WrongFormatException, "Error in " << variable.getFilename() << ", line " << variable.getLineNumber() << ": distribution expression must evaluate to type 'distribution'.");
+                    
+                    std::set<storm::expressions::Variable> containedVariables = variable.getDistributionExpression().getVariables();
+                    std::set<storm::expressions::Variable> illegalVariables;
+                    std::set_difference(containedVariables.begin(), containedVariables.end(), constants.begin(), constants.end(), std::inserter(illegalVariables, illegalVariables.begin()));
+                    bool isValid = illegalVariables.empty();
+                    if (!isValid) {
+                        std::vector<std::string> illegalVariableNames;
+                        for (auto const& var : illegalVariables) {
+                            illegalVariableNames.push_back(var.getName());
+                        }
+                        // in the current GSMP design we can't do this because distributions can refer to runtime variables through CTMC command transformation! 
+                        //STORM_LOG_THROW(isValid, storm::exceptions::WrongFormatException, "Error in " << variable.getFilename() << ", line " << variable.getLineNumber() << "event: " << variable.getName() << ", distribution expression referes to unknown constants: " << boost::algorithm::join(illegalVariableNames, ",") << ".");
+                    }
+
+                    // Record the new identifier for future checks
+                    variables.insert(variable.getExpressionVariable());
+                    all.insert(variable.getExpressionVariable());
+                }
             }
             
             // Create the set of valid identifiers for future checks.
@@ -1034,13 +1067,18 @@ namespace storm {
             bool hasProbabilisticCommand = false;
             bool hasMarkovianCommand = false;
             bool hasLabeledMarkovianCommand = false;
+            bool hasEvent = false;
             for (auto const& module : this->getModules()) {
                 std::set<storm::expressions::Variable> legalVariables = globalVariables;
+                std::set<std::string> legalEventNames;
                 for (auto const& variable : module.getBooleanVariables()) {
                     legalVariables.insert(variable.getExpressionVariable());
                 }
                 for (auto const& variable : module.getIntegerVariables()) {
                     legalVariables.insert(variable.getExpressionVariable());
+                }
+                for (auto const& variable : module.getEventVariables()) {
+                    legalEventNames.insert(variable.getName());
                 }
                 
                 for (auto& command : module.getCommands()) {
@@ -1069,6 +1107,13 @@ namespace storm {
                     // whether or not the PRISM compatibility mode was enabled.
                     if (command.isMarkovian() && command.isLabeled()) {
                         hasLabeledMarkovianCommand = true;
+                    }
+
+                    // check that command event is valid and declared
+                    if (command.isMaster()) {
+                        std::string const& eventName = command.getEventName();
+                        auto eventIt = legalEventNames.find(eventName); 
+                        STORM_LOG_THROW(eventIt != legalEventNames.end(), storm::exceptions::WrongFormatException, "Error in " << command.getFilename() << ", line " << command.getLineNumber() << ": event '" << eventName << "' is not defined.");
                     }
                     
                     // Check all updates.
@@ -1118,9 +1163,13 @@ namespace storm {
                     }
                 }
             }
+
+            if (this->getModelType() != Program::ModelType::GSMP && hasEvent) {
+                STORM_LOG_THROW(false, storm::exceptions::WrongFormatException, "The model uses commands with events. Events are only allowed for model type GSMP.");
+            }
             
-            if (hasLabeledMarkovianCommand) {
-                if (prismCompatibility) {
+            if (this->getModelType() != Program::ModelType::GSMP && hasLabeledMarkovianCommand) {
+                if (storm::settings::getModule<storm::settings::modules::IOSettings>().isPrismCompatibilityEnabled()) {
                     STORM_LOG_WARN_COND(false, "The model uses synchronizing Markovian commands. This may lead to unexpected verification results, because of unclear semantics.");
                 } else {
                     STORM_LOG_THROW(false, storm::exceptions::WrongFormatException, "The model uses synchronizing Markovian commands. This may lead to unexpected verification results, because of unclear semantics.");
@@ -1205,7 +1254,7 @@ namespace storm {
                 bool isValid = std::includes(variablesAndConstants.begin(), variablesAndConstants.end(), containedVariables.begin(), containedVariables.end());
                 STORM_LOG_THROW(isValid, storm::exceptions::WrongFormatException, "Error in " << formula.getFilename() << ", line " << formula.getLineNumber() << ": formula expression refers to unknown identifiers.");
             }
-            
+
             if(lvl >= Program::ValidityCheckLevel::READYFORPROCESSING) {
                 // We check for each global variable and each labeled command, whether there is at most one instance writing to that variable.
                 std::set<std::pair<std::string, std::string>> globalBVarsWrittenToByCommand;
@@ -1243,13 +1292,18 @@ namespace storm {
         Program Program::simplify() {
             // Start by substituting the constants, because this will potentially erase some commands or even actions.
             Program substitutedProgram = this->substituteConstants();
-            
+
             // As we possibly delete some commands and some actions might be dropped from modules altogether, we need to
             // maintain a list of actions that we need to remove in other modules. For example, if module A loses all [a]
             // commands, we need to delete all [a] commands from all other modules as well. If we do not do that, we will
             // remove the forced synchronization that was there before.
             std::set<uint_fast64_t> actionIndicesToDelete;
-            
+
+            // all action indices that have at master event
+            // it is expected that at this point no action has more than 
+            // one master event
+            std::set<uint_fast64_t> actionIndicesWithMaster;
+
             std::vector<Module> newModules;
             std::vector<Constant> newConstants = substitutedProgram.getConstants();
             for (auto const& module : substitutedProgram.getModules()) {
@@ -1261,7 +1315,17 @@ namespace storm {
                         newCommands.emplace_back(command.simplify());
                     }
                 }
-                
+
+                if (modelType == ModelType::GSMP) {
+                    for (auto const& command : module.getCommands()) {
+                        if (!command.isLabeled() || command.isSlave()) {
+                            continue;
+                        }
+                        // command is master if it is traditional exp command or gsmp master event
+                        actionIndicesWithMaster.emplace(command.getActionIndex());
+                    }
+                }
+
                 // Substitute variables by global constants if possible.
                 std::map<storm::expressions::Variable, storm::expressions::Expression> booleanVars;
                 std::map<storm::expressions::Variable, storm::expressions::Expression> integerVars;
@@ -1292,7 +1356,7 @@ namespace storm {
                         }
                     }
                 }
-                
+
                 std::vector<storm::prism::BooleanVariable> newBooleanVars;
                 for (auto const& variable : module.getBooleanVariables()) {
                     if (booleanVars.find(variable.getExpressionVariable()) == booleanVars.end()) {
@@ -1324,8 +1388,24 @@ namespace storm {
                         }
                     }
                 }
+
+                // find events that are not being used and remove them
+                std::vector<storm::prism::EventVariable> newEventVariables;
+                std::set<std::string> usedEvents;
+                for (auto const& command : newCommands) {
+                    if (!command.hasEvent() || command.isSlave()) {
+                        continue;
+                    }
+                    usedEvents.insert(command.getEventName());
+                }
+
+                for (auto const& variable : module.getEventVariables()) {
+                    if (usedEvents.find(variable.getName()) != usedEvents.end()) {
+                        newEventVariables.push_back(variable);
+                    }
+                }
                 
-                newModules.emplace_back(module.getName(), newBooleanVars, newIntegerVars, newCommands);
+                newModules.emplace_back(module.getName(), newBooleanVars, newIntegerVars, newEventVariables, newCommands);
                 
                 // Determine the set of action indices that have been deleted entirely.
                 std::set_difference(module.getSynchronizingActionIndices().begin(), module.getSynchronizingActionIndices().end(), newModules.back().getSynchronizingActionIndices().begin(), newModules.back().getSynchronizingActionIndices().end(), std::inserter(actionIndicesToDelete, actionIndicesToDelete.begin()));
@@ -1334,6 +1414,19 @@ namespace storm {
             // If we have to delete whole actions, do so now.
             std::map<std::string, uint_fast64_t> newActionToIndexMap;
             std::vector<RewardModel> newRewardModels;
+
+            // add to action indices that are being deleted all action indices that don't have master
+            if (modelType == ModelType::GSMP && actionIndicesWithMaster.size() < this->getSynchronizingActionIndices().size()) {
+                std::set<uint_fast64_t> actionIndicesWithoutMaster;
+                std::set_difference(this->getSynchronizingActionIndices().begin(), this->getSynchronizingActionIndices().end(), actionIndicesWithMaster.begin(), actionIndicesWithMaster.end(), std::inserter(actionIndicesWithoutMaster, actionIndicesWithoutMaster.begin()));
+                for (auto index : actionIndicesWithoutMaster) {
+                    STORM_LOG_WARN_COND(actionIndicesWithoutMaster.empty(), "found 0 master events for action: " << indexToActionMap[index] << ", all commands with this action will be ignored");
+                }
+                std::set<uint_fast64_t> actionsToDeleteIntersect;
+                std::set_intersection(actionIndicesToDelete.begin(), actionIndicesToDelete.end(), actionIndicesWithoutMaster.begin(), actionIndicesWithoutMaster.end(), std::inserter(actionsToDeleteIntersect, actionsToDeleteIntersect.begin()));
+                actionIndicesToDelete = std::move(actionsToDeleteIntersect);
+            }
+
             if (!actionIndicesToDelete.empty()) {
                 boost::container::flat_set<uint_fast64_t> actionsToKeep;
                 std::set_difference(this->getSynchronizingActionIndices().begin(), this->getSynchronizingActionIndices().end(), actionIndicesToDelete.begin(), actionIndicesToDelete.end(), std::inserter(actionsToKeep, actionsToKeep.begin()));
@@ -1359,8 +1452,46 @@ namespace storm {
                     }
                 }
             }
-            
-            return Program(this->manager, modelType, newConstants, getGlobalBooleanVariables(), getGlobalIntegerVariables(), getFormulas(), newModules, actionIndicesToDelete.empty() ? getActionNameToIndexMapping() : newActionToIndexMap, actionIndicesToDelete.empty() ? this->getRewardModels() : newRewardModels, getLabels(), getOptionalInitialConstruct(), this->getOptionalSystemCompositionConstruct(), prismCompatibility);
+
+            if (this->getModelType() == ModelType::GSMP) {
+                // iterate over exponential commands without event and transform 
+                // each command into new command with own exponential event and 
+                // with update probabilities divided by sum of rates
+
+                std::vector<Module> expandedModules;
+                for (auto const& module : newModules) {
+                    std::vector<Command> newCommands;
+                    std::vector<EventVariable> newEventVariables = module.getEventVariables();
+                    for (auto const& command : module.getCommands()) {
+                        if (command.hasEvent()) {
+                            newCommands.push_back(command);
+                            continue;
+                        }
+
+                        std::vector<Update> newUpdates;
+                        // first calculate the sum of all rates
+                        bool was = false;
+                        storm::expressions::Expression sumExpression;
+                        std::vector<storm::expressions::Expression> likelihoodExpressions;
+                        for (auto const& update : command.getUpdates()) {
+                            likelihoodExpressions.push_back(update.getLikelihoodExpression());
+                        }
+                        sumExpression = expressions::sum(likelihoodExpressions);
+
+                        for (auto const& oldUpdate : command.getUpdates()) {
+                            newUpdates.emplace_back(oldUpdate.getGlobalIndex(), oldUpdate.getLikelihoodExpression() / sumExpression, oldUpdate.getAssignments(), oldUpdate.getFilename(), oldUpdate.getLineNumber());
+                        }
+                        auto variable = manager->declareFreshEventVariable();
+                        auto distrExpression = expressions::distribution(expressions::EventDistributionTypes::Exp, sumExpression);
+                        newEventVariables.emplace_back(variable, distrExpression);
+                        newCommands.emplace_back(command.getGlobalIndex(), false, command.getActionIndex(), command.getActionName(), variable.getName(), command.getGuardExpression(), newUpdates, command.getFilename(), command.getLineNumber());
+                    }
+                    expandedModules.emplace_back(module.getName(), module.getBooleanVariables(), module.getIntegerVariables(), newEventVariables, newCommands, module.getFilename(), module.getLineNumber());
+                }
+                newModules = std::move(expandedModules);
+            }
+
+            return Program(this->manager, modelType, newConstants, getGlobalBooleanVariables(), getGlobalIntegerVariables(), getFormulas(), newModules, actionIndicesToDelete.empty() ? getActionNameToIndexMapping() : newActionToIndexMap, actionIndicesToDelete.empty() ? this->getRewardModels() : newRewardModels, getLabels(), getOptionalInitialConstruct(), this->getOptionalSystemCompositionConstruct());
         }
         
         Program Program::flattenModules(std::shared_ptr<storm::utility::solver::SmtSolverFactory> const& smtSolverFactory) const {
@@ -1370,7 +1501,6 @@ namespace storm {
             }
             
             STORM_LOG_THROW(this->getModelType() == ModelType::DTMC || this->getModelType() == ModelType::MDP, storm::exceptions::InvalidTypeException, "Unable to flatten modules for model of type '" << this->getModelType() << "'.");
-            
             // Otherwise, we need to actually flatten the contained modules.
             
             // Get an SMT solver for computing the possible guard combinations.
@@ -1426,7 +1556,7 @@ namespace storm {
                             ++nextUpdateIndex;
                         }
                         
-                        newCommands.push_back(storm::prism::Command(nextCommandIndex, command.isMarkovian(), actionToIndexMap.find("")->second, "", command.getGuardExpression(), updates, command.getFilename(), 0));
+                        newCommands.push_back(storm::prism::Command(nextCommandIndex, command.isMarkovian(), actionToIndexMap.find("")->second, "", command.getEventName(), command.getGuardExpression(), updates, command.getFilename(), 0));
                         ++nextCommandIndex;
                     }
                 }
@@ -1553,10 +1683,9 @@ namespace storm {
                     solver->pop();
                 }
             }
-            
             // Finally, we can create the module and the program and return it.
-            storm::prism::Module singleModule(newModuleName.str(), allBooleanVariables, allIntegerVariables, newCommands, this->getFilename(), 0);
-            return Program(manager, this->getModelType(), this->getConstants(), std::vector<storm::prism::BooleanVariable>(), std::vector<storm::prism::IntegerVariable>(), this->getFormulas(), {singleModule}, actionToIndexMap, this->getRewardModels(), this->getLabels(), this->getOptionalInitialConstruct(), this->getOptionalSystemCompositionConstruct(), prismCompatibility, this->getFilename(), 0, true);
+            storm::prism::Module singleModule(newModuleName.str(), allBooleanVariables, allIntegerVariables, {}, newCommands, this->getFilename(), 0);
+            return Program(manager, this->getModelType(), this->getConstants(), std::vector<storm::prism::BooleanVariable>(), std::vector<storm::prism::IntegerVariable>(), this->getFormulas(), {singleModule}, actionToIndexMap, this->getRewardModels(), this->getLabels(), this->getOptionalInitialConstruct(), this->getOptionalSystemCompositionConstruct(), this->getFilename(), 0, true);
         }
         
         std::unordered_map<uint_fast64_t, std::string> Program::buildCommandIndexToActionNameMap() const {
@@ -1587,7 +1716,7 @@ namespace storm {
             return res;
             
         }
-        
+
         Command Program::synchronizeCommands(uint_fast64_t newCommandIndex, uint_fast64_t actionIndex, uint_fast64_t firstUpdateIndex, std::string const& actionName, std::vector<std::reference_wrapper<Command const>> const& commands) const {
             // To construct the synchronous product of the commands, we need to store a list of its updates.
             std::vector<storm::prism::Update> newUpdates;
@@ -1641,7 +1770,6 @@ namespace storm {
             for (uint_fast64_t i = 1; i < commands.size(); ++i) {
                 newGuard = newGuard && commands[i].get().getGuardExpression();
             }
-            
             return Command(newCommandIndex, false, actionIndex, actionName, newGuard, newUpdates, this->getFilename(), 0);
         }
         
@@ -1683,6 +1811,7 @@ namespace storm {
                 case Program::ModelType::MDP: out << "mdp"; break;
                 case Program::ModelType::CTMDP: out << "ctmdp"; break;
                 case Program::ModelType::MA: out << "ma"; break;
+                case Program::ModelType::GSMP: out << "gsmp"; break;
             }
             return out;
         }
@@ -1701,7 +1830,7 @@ namespace storm {
                 stream << "global " << variable << std::endl;
             }
             stream << std::endl;
-            
+
             for (auto const& formula : program.getFormulas()) {
                 stream << formula << std::endl;
             }

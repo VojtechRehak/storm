@@ -9,7 +9,6 @@
 #include "storm/storage/expressions/ChangeManagerVisitor.h"
 #include "storm/storage/expressions/CheckIfThenElseGuardVisitor.h"
 #include "storm/storage/expressions/Expressions.h"
-#include "storm/storage/expressions/CompiledExpression.h"
 #include "storm/exceptions/InvalidTypeException.h"
 #include "storm/exceptions/InvalidArgumentException.h"
 #include "storm/utility/macros.h"
@@ -25,11 +24,6 @@ namespace storm {
          */
         static void assertSameManager(BaseExpression const& a, BaseExpression const& b) {
             STORM_LOG_THROW(a.getManager() == b.getManager(), storm::exceptions::InvalidArgumentException, "Expressions are managed by different manager.");
-        }
-        
-        // Spell out destructor explicitly so we can use forward declarations in the header.
-        Expression::~Expression() {
-            // Intentionally left empty.
         }
         
         Expression::Expression(std::shared_ptr<BaseExpression const> const& expressionPtr) : expressionPtr(expressionPtr) {
@@ -68,7 +62,11 @@ namespace storm {
         storm::RationalNumber Expression::evaluateAsRational() const {
             return this->getBaseExpression().evaluateAsRational();
         }
-        
+
+        EventDistributionTypes Expression::getDistributionType() const {
+            return this->getBaseExpression().getDistributionType();
+        }
+
         Expression Expression::simplify() const {
             return Expression(this->getBaseExpression().simplify());
         }
@@ -185,6 +183,10 @@ namespace storm {
         bool Expression::hasBitVectorType() const {
             return this->getBaseExpression().hasBitVectorType();
         }
+
+        bool Expression::hasDistributionType() const {
+            return this->getBaseExpression().hasEventDistributionType();
+        }
         
         boost::any Expression::accept(ExpressionVisitor& visitor, boost::any const& data) const {
             return this->getBaseExpression().accept(visitor, data);
@@ -202,19 +204,7 @@ namespace storm {
                 return true;
             }
             SyntacticalEqualityCheckVisitor checker;
-            return checker.isSyntacticallyEqual(*this, other);
-        }
-        
-        bool Expression::hasCompiledExpression() const {
-            return static_cast<bool>(compiledExpression);
-        }
-        
-        void Expression::setCompiledExpression(std::shared_ptr<CompiledExpression> const& compiledExpression) const {
-            this->compiledExpression = compiledExpression;
-        }
-        
-        CompiledExpression const& Expression::getCompiledExpression() const {
-            return *compiledExpression;
+            return checker.isSyntaticallyEqual(*this, other);
         }
 
         std::string Expression::toString() const {
@@ -354,6 +344,18 @@ namespace storm {
             assertSameManager(first.getBaseExpression(), second.getBaseExpression());
             return Expression(std::shared_ptr<BaseExpression>(new BinaryNumericalFunctionExpression(first.getBaseExpression().getManager(), first.getType().minimumMaximum(second.getType()), first.getBaseExpressionPointer(), second.getBaseExpressionPointer(), BinaryNumericalFunctionExpression::OperatorType::Max)));
         }
+        Expression distribution(EventDistributionTypes type, Expression const& first, boost::optional<Expression> const& second) {
+            if (second){
+                assertSameManager(first.getBaseExpression(), second.get().getBaseExpression());
+                return Expression(std::shared_ptr<BaseExpression>(new EventDistributionExpression(first.getBaseExpression().getManager(), type, first.getBaseExpressionPointer(), second.get().getBaseExpressionPointer())));
+            }
+            return Expression(std::shared_ptr<BaseExpression>(new EventDistributionExpression(first.getBaseExpression().getManager(), type, first.getBaseExpressionPointer())));
+        }
+
+        Expression distribution(EventDistributionTypes type, Expression const& first) {
+            return Expression(std::shared_ptr<BaseExpression>(new EventDistributionExpression(first.getBaseExpression().getManager(), type, first.getBaseExpressionPointer())));
+        }
+
         
         Expression ite(Expression const& condition, Expression const& thenExpression, Expression const& elseExpression) {
             assertSameManager(condition.getBaseExpression(), thenExpression.getBaseExpression());
@@ -367,7 +369,6 @@ namespace storm {
         }
         
         Expression iff(Expression const& first, Expression const& second) {
-            assertSameManager(first.getBaseExpression(), second.getBaseExpression());
             return Expression(std::shared_ptr<BaseExpression>(new BinaryBooleanFunctionExpression(first.getBaseExpression().getManager(), first.getType().logicalConnective(second.getType()), first.getBaseExpressionPointer(), second.getBaseExpressionPointer(), BinaryBooleanFunctionExpression::OperatorType::Iff)));
         }
 

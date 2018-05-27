@@ -6,11 +6,15 @@
 
 namespace storm {
     namespace prism {
-        Module::Module(std::string const& moduleName, std::vector<storm::prism::BooleanVariable> const& booleanVariables, std::vector<storm::prism::IntegerVariable> const& integerVariables, std::vector<storm::prism::Command> const& commands, std::string const& filename, uint_fast64_t lineNumber) : Module(moduleName, booleanVariables, integerVariables, commands, "", std::map<std::string, std::string>(), filename, lineNumber) {
+        Module::Module(std::string const& moduleName, std::vector<storm::prism::BooleanVariable> const& booleanVariables, std::vector<storm::prism::IntegerVariable> const& integerVariables, std::vector<storm::prism::EventVariable> const& eventVariables, std::vector<storm::prism::Command> const& commands, std::string const& filename, uint_fast64_t lineNumber) : Module(moduleName, booleanVariables, integerVariables, eventVariables, commands, "", std::map<std::string, std::string>(), filename, lineNumber) {
             // Intentionally left empty.
         }
+
+        Module::Module(std::string const& moduleName, std::vector<storm::prism::BooleanVariable> const& booleanVariables, std::vector<storm::prism::IntegerVariable> const& integerVariables, std::vector<storm::prism::Command> const& commands, std::string const& filename, uint_fast64_t lineNumber) : Module(moduleName, booleanVariables, integerVariables, std::vector<storm::prism::EventVariable>(), commands, "", std::map<std::string, std::string>(), filename, lineNumber) {
+
+        }
         
-        Module::Module(std::string const& moduleName, std::vector<storm::prism::BooleanVariable> const& booleanVariables, std::vector<storm::prism::IntegerVariable> const& integerVariables, std::vector<storm::prism::Command> const& commands, std::string const& renamedFromModule, std::map<std::string, std::string> const& renaming, std::string const& filename, uint_fast64_t lineNumber) : LocatedInformation(filename, lineNumber), moduleName(moduleName), booleanVariables(booleanVariables), booleanVariableToIndexMap(), integerVariables(integerVariables), integerVariableToIndexMap(), commands(commands), synchronizingActionIndices(), actionIndicesToCommandIndexMap(), renamedFromModule(renamedFromModule), renaming(renaming) {
+        Module::Module(std::string const& moduleName, std::vector<storm::prism::BooleanVariable> const& booleanVariables, std::vector<storm::prism::IntegerVariable> const& integerVariables, std::vector<storm::prism::EventVariable> const& eventVariables, std::vector<storm::prism::Command> const& commands, std::string const& renamedFromModule, std::map<std::string, std::string> const& renaming, std::string const& filename, uint_fast64_t lineNumber) : LocatedInformation(filename, lineNumber), moduleName(moduleName), booleanVariables(booleanVariables), booleanVariableToIndexMap(), integerVariables(integerVariables), eventVariables(eventVariables), integerVariableToIndexMap(), commands(commands), synchronizingActionIndices(), actionIndicesToCommandIndexMap(), renamedFromModule(renamedFromModule), renaming(renaming) {
             // Initialize the internal mappings for fast information retrieval.
             this->createMappings();
         }
@@ -21,6 +25,10 @@ namespace storm {
         
         std::size_t Module::getNumberOfIntegerVariables() const {
             return this->integerVariables.size();
+        }
+
+        std::size_t Module::getNumberOfEventVariables() const {
+            return this->eventVariables.size();
         }
         
         storm::prism::BooleanVariable const& Module::getBooleanVariable(std::string const& variableName) const {
@@ -43,12 +51,25 @@ namespace storm {
             return this->integerVariables;
         }
 
+        storm::prism::EventVariable const& Module::getEventVariable(std::string const& variableName) const {
+            auto const& nameIndexPair = this->eventVariableToIndexMap.find(variableName);
+            STORM_LOG_THROW(nameIndexPair != this->eventVariableToIndexMap.end(), storm::exceptions::InvalidArgumentException, "Unknown event variable '" << variableName << "'.");
+            return this->getEventVariables()[nameIndexPair->second];
+        }
+
+        std::vector<storm::prism::EventVariable> const& Module::getEventVariables() const {
+            return this->eventVariables;
+        }
+
         std::set<storm::expressions::Variable> Module::getAllExpressionVariables() const {
             std::set<storm::expressions::Variable> result;
             for (auto const& var : this->getBooleanVariables()) {
                 result.insert(var.getExpressionVariable());
             }
             for (auto const& var : this->getIntegerVariables()) {
+                result.insert(var.getExpressionVariable());
+            }
+            for (auto const& var : this->getEventVariables()) {
                 result.insert(var.getExpressionVariable());
             }
             return result;
@@ -150,6 +171,10 @@ namespace storm {
                     }
                 }
             }
+
+            for (uint_fast64_t i = 0; i < this->eventVariables.size(); ++i) {
+                eventVariableToIndexMap[eventVariables[i].getName()] = i;
+            } 
             
             // For all actions that are "in the module", but for which no command exists, we add the mapping to an empty
             // set of commands.
@@ -169,7 +194,7 @@ namespace storm {
                 }
             }
             
-            return Module(this->getName(), this->getBooleanVariables(), this->getIntegerVariables(), newCommands);
+            return Module(this->getName(), this->getBooleanVariables(), this->getIntegerVariables(), this->getEventVariables(), newCommands);
         }
         
         Module Module::restrictActionIndices(boost::container::flat_set<uint_fast64_t> const& actionIndices) const {
@@ -181,7 +206,7 @@ namespace storm {
                 }
             }
             
-            return Module(this->getName(), this->getBooleanVariables(), this->getIntegerVariables(), newCommands);
+            return Module(this->getName(), this->getBooleanVariables(), this->getIntegerVariables(), this->getEventVariables(), newCommands);
         }
         
         Module Module::substitute(std::map<storm::expressions::Variable, storm::expressions::Expression> const& substitution) const {
@@ -196,6 +221,12 @@ namespace storm {
             for (auto const& integerVariable : this->getIntegerVariables()) {
                 newIntegerVariables.emplace_back(integerVariable.substitute(substitution));
             }
+
+            std::vector<EventVariable> newEventVariables;
+            newEventVariables.reserve(this->getNumberOfEventVariables());
+            for (auto const& eventVariable : this->getEventVariables()) {
+                newEventVariables.emplace_back(eventVariable.substitute(substitution));
+            }
             
             std::vector<Command> newCommands;
             newCommands.reserve(this->getNumberOfCommands());
@@ -203,7 +234,7 @@ namespace storm {
                 newCommands.emplace_back(command.substitute(substitution));
             }
             
-            return Module(this->getName(), newBooleanVariables, newIntegerVariables, newCommands, this->getFilename(), this->getLineNumber());
+            return Module(this->getName(), newBooleanVariables, newIntegerVariables, newEventVariables, newCommands, this->getFilename(), this->getLineNumber());
         }
         
         bool Module::containsVariablesOnlyInUpdateProbabilities(std::set<storm::expressions::Variable> const& undefinedConstantVariables) const {
@@ -249,6 +280,9 @@ namespace storm {
             }
             for (auto const& integerVariable : module.getIntegerVariables()) {
                 stream << "\t" << integerVariable << std::endl;
+            }
+            for (auto const& eventVariable : module.getEventVariables()) {
+                stream << "\t" << eventVariable << std::endl;
             }
             for (auto const& command : module.getCommands()) {
                 stream << "\t" << command << std::endl;

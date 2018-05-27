@@ -1,0 +1,145 @@
+gsmp
+const int K = 2;
+const int N = 2;
+const double CUSTOMER_RETURN_PROB = 3/5;
+const double THINKING_RATE = 9/10;
+
+
+
+module Producer
+	thinking_customers: [0..2] init 2;
+	event _x0 = Exponentian((9/10 * thinking_customers));
+	[think] (thinking_customers > 0) --_x0 -> ((9/10 * thinking_customers) / (9/10 * thinking_customers)) : (thinking_customers' = (thinking_customers - 1));
+	[serve] true --slave -> 3/5 : (thinking_customers' = (thinking_customers + 1)) + (1 - 3/5) : true;
+	[serve_last] true --slave -> 3/5 : (thinking_customers' = (thinking_customers + 1)) + (1 - 3/5) : true;
+endmodule
+
+module Server
+	serving: [0..1] init 0;
+	event Serve_e = Dirac(1);
+	[serve] true --Serve_e -> 1 : (serving' = 1);
+	[serve_last] true --Serve_e -> 1 : (serving' = 0);
+endmodule
+
+module Queue
+	customers: [0..2] init 0;
+	[think] (customers < 2) --slave -> 1 : (customers' = (customers + 1));
+	[serve] (customers > 1) --slave -> 1 : (customers' = (customers - 1));
+	[serve_last] (customers = 1) --slave -> 1 : (customers' = (customers - 1));
+endmodule
+
+
+ WARN (Program.cpp:1038): thinking_customers
+ WARN (Program.cpp:1038): thinking_customers
+ WARN (Program.cpp:1038): thinking_customers
+ WARN (Gsmp.cpp:37): event name: deadlock_event_2 | id: 2
+
+ WARN (Gsmp.cpp:38): 		0	1	2	3	4	5	6	7	
+	---- group 0/7 ---- 
+0	(	0	0	0	0	0	0	0	0		)	0
+	---- group 1/7 ---- 
+1	(	0	0	0	0	0	0	0	0		)	1
+	---- group 2/7 ---- 
+2	(	0	0	0	0	0	0	0	0		)	2
+	---- group 3/7 ---- 
+3	(	0	0	0	0	0	0	0	0		)	3
+	---- group 4/7 ---- 
+4	(	0	0	0	0	0	0	0	0		)	4
+	---- group 5/7 ---- 
+5	(	0	0	0	0	0	0	0	0		)	5
+	---- group 6/7 ---- 
+6	(	0	0	0	0	0	0	0	0		)	6
+	---- group 7/7 ---- 
+7	(	0	0	0	0	0	0	0	1		)	7
+		0	1	2	3	4	5	6	7	
+
+
+ WARN (Gsmp.cpp:37): event name: Serve_e | id: 1
+
+ WARN (Gsmp.cpp:38): 		0	1	2	3	4	5	6	7	
+	---- group 0/8 ---- 
+0	(	0	0	0	0	0	0	0	0		)	0
+	---- group 1/8 ---- 
+1	(	0.6	0	0	0.4	0	0	0	0		)	1
+	---- group 2/8 ---- 
+2	(	0	0	0	0	0.4	0.6	0	0		)	2
+	---- group 3/8 ---- 
+3	(	0	0	0	0	0	0	0	0		)	3
+	---- group 4/8 ---- 
+4	(	0	0	0	0.6	0	0	0	0.4		)	4
+	---- group 5/8 ---- 
+5	(	0.6	0	0	0.4	0	0	0	0		)	5
+	---- group 6/8 ---- 
+6	(	0	0	0	0.6	0	0	0	0.4		)	6
+	---- group 7/8 ---- 
+7	(	0	0	0	0	0	0	0	0		)	7
+	---- group 8/8 ---- 
+8	(	0	0	0	0	0.4	0.6	0	0		)	8
+		0	1	2	3	4	5	6	7	
+
+
+ WARN (Gsmp.cpp:37): event name: _x0 | id: 0
+
+ WARN (Gsmp.cpp:38): 		0	1	2	3	4	5	6	7	8	
+	---- group 0/5 ---- 
+0	(	0	1	0	0	0	0	0	0	0		)	0
+	---- group 1/5 ---- 
+1	(	0	0	1	0	0	0	0	0	0		)	1
+	---- group 2/5 ---- 
+2	(	0	0	0	0	0	0	0	0	0		)	2
+	---- group 3/5 ---- 
+3	(	0	0	0	0	0	0	1	0	0		)	3
+	---- group 4/5 ---- 
+4	(	0	0	0	0	0	0	0	0	0		)	4
+	---- group 5/5 ---- 
+5	(	0	0	0	0	0	0	0	0	1		)	5
+		0	1	2	3	4	5	6	7	8	
+
+
+Time for model construction: 0.110s.
+
+-------------------------------------------------------------- 
+Model type: 	GSMP (sparse)
+States: 	9
+Transitions: 	17
+matrix: 			
+        0	1	2	3	4	5	6	7	8	
+
+	---- group 0/8 ---- 
+// thinking_customers=2 customers=0 , serving=0
+0	(	0	1	0	0	0	0	0	0	0	) think
+	---- group 1/8 ---- 
+// thinking_customers=1 , customers=1 , serving=0
+1	(	0	0	1	0	0	0	0	0	0	) think
+2	(	0.6	0	0	0.4	0	0	0	0	0	) serve_last
+	---- group 2/8 ---- 
+// thinking_customers=0 , customers=2 , serving=0
+3	(	0	0	0	0	0.4	0.6	0	0	0	) serve
+	---- group 3/8 ----
+// thinking_customers=1 , customers=0 , serving=0
+4	(	0	0	0	0	0	0	1	0	0	) think
+	---- group 4/8 ---- 
+// thinking_customers=0 , customers=1 , serving=1
+5	(	0	0	0	0.6	0	0	0	0.4	0	) serve_last
+	---- group 5/8 ---- 
+// thinking_customers=1 , customers=1 , serving=1
+6	(	0	0	0	0	0	0	0	0	1	) think
+7	(	0.6	0	0	0.4	0	0	0	0	0	) serve_last
+	---- group 6/8 ---- 
+// thinking_customers=0 , customers=1 , serving=0
+8	(	0	0	0	0.6	0	0	0	0.4	0	) serve_last
+	---- group 7/8 ---- 
+// thinking_customers=0 , customers=0 , serving=0
+9	(	0	0	0	0	0	0	0	1	0	) deadlock_event
+	---- group 8/8 ---- 
+// thinking_customers=0 , customers=2, serving=1
+10	(	0	0	0	0	0.4	0.6	0	0	0	) serve
+
+		0	1	2	3	4	5	6	7	8	
+
+Reward Models:  none
+State Labels: 	2 labels
+   * deadlock -> 1 item(s)
+   * init -> 1 item(s)
+Choice Labels: 	none
+-------------------------------------------------------------- 

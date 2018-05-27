@@ -95,7 +95,10 @@ namespace storm {
             
             plusExpression = multiplicationExpression[qi::_val = qi::_1] > *(plusOperator_ >> multiplicationExpression)[qi::_val = phoenix::bind(&ExpressionCreator::createPlusExpression, phoenix::ref(*expressionCreator), qi::_val, qi::_1, qi::_2, qi::_pass)];
             plusExpression.name("plus expression");
-            
+            bool p;
+            distributionExpression = (distributionOperatorStruct_ > qi::lit("(") > expression >  -( qi::lit(",") > expression) > qi::lit(")"))[qi::_val = phoenix::bind(&ExpressionCreator::createDistributionExpression, phoenix::ref(*expressionCreator), qi::_1, qi::_2, qi::_3, qi::_pass)]; 
+            distributionExpression.name("distribution expression");
+
             if (allowBacktracking) {
                 relativeExpression = plusExpression[qi::_val = qi::_1] >> -(relationalOperator_ >> plusExpression)[qi::_val = phoenix::bind(&ExpressionCreator::createRelationalExpression, phoenix::ref(*expressionCreator), qi::_val, qi::_1, qi::_2, qi::_pass)];
             } else {
@@ -123,25 +126,26 @@ namespace storm {
             iteExpression = orExpression[qi::_val = qi::_1] > -(qi::lit("?") > iteExpression > qi::lit(":") > iteExpression)[qi::_val = phoenix::bind(&ExpressionCreator::createIteExpression, phoenix::ref(*expressionCreator), qi::_val, qi::_1, qi::_2, qi::_pass)];
             iteExpression.name("if-then-else expression");
             
-            expression %= iteExpression;
+            expression %= iteExpression | distributionExpression;
             expression.name("expression");
             
-            /*!
-             * Enable this for debugging purposes.
-            debug(expression);
-            debug(iteExpression);
-            debug(orExpression);
-            debug(andExpression);
-            debug(equalityExpression);
-            debug(relativeExpression);
-            debug(plusExpression);
-            debug(multiplicationExpression);
-            debug(infixPowerExpression);
-            debug(unaryExpression);
-            debug(atomicExpression);
-            debug(literalExpression);
-            debug(identifierExpression);
-             */
+            // !
+             // * Enable this for debugging purposes.
+            // debug(expression);
+            // debug(iteExpression);
+            // debug(orExpression);
+            // debug(andExpression);
+            // debug(equalityExpression);
+            // debug(relativeExpression);
+            // debug(plusExpression);
+            // debug(multiplicationExpression);
+            // debug(infixPowerExpression);
+            // debug(unaryExpression);
+            // debug(atomicExpression);
+            // debug(literalExpression);
+            // debug(identifierExpression);
+            // debug(distributionExpression);
+             
             
             if (enableErrorHandling) {
                 // Enable error reporting.
@@ -159,6 +163,8 @@ namespace storm {
                 qi::on_error<qi::fail>(identifierExpression, handler(qi::_1, qi::_2, qi::_3, qi::_4));
                 qi::on_error<qi::fail>(minMaxExpression, handler(qi::_1, qi::_2, qi::_3, qi::_4));
                 qi::on_error<qi::fail>(floorCeilExpression, handler(qi::_1, qi::_2, qi::_3, qi::_4));
+                qi::on_error<qi::fail>(distributionExpression, handler(qi::_1, qi::_2, qi::_3, qi::_4));
+
             }
         }
         

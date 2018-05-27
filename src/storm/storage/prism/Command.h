@@ -26,6 +26,7 @@ namespace storm {
              * @param filename The filename in which the command is defined.
              * @param lineNumber The line number in which the command is defined.
              */
+            Command(uint_fast64_t globalIndex, bool markovian, uint_fast64_t actionIndex, std::string const& actionName, std::string const& eventName, storm::expressions::Expression const& guardExpression, std::vector<storm::prism::Update> const& updates, std::string const& filename = "", uint_fast64_t lineNumber = 0);
             Command(uint_fast64_t globalIndex, bool markovian, uint_fast64_t actionIndex, std::string const& actionName, storm::expressions::Expression const& guardExpression, std::vector<storm::prism::Update> const& updates, std::string const& filename = "", uint_fast64_t lineNumber = 0);
             
             // Create default implementations of constructors/assignment.
@@ -41,6 +42,8 @@ namespace storm {
              * @return The action name of this command.
              */
             std::string const& getActionName() const;
+
+            std::string const& getEventName() const;
             
             /*!
              * Retrieves the action index of this command.
@@ -48,7 +51,7 @@ namespace storm {
              * @return The action index of the command.
              */
             uint_fast64_t getActionIndex() const;
-            
+
             /*!
              * Retrieves whether the command is a Markovian command, i.e. it's update likelihoods are to be interpreted
              * as rates in a continuous-time model.
@@ -114,7 +117,10 @@ namespace storm {
              * @return True iff the command is labeled.
              */
             bool isLabeled() const;
-            
+            bool hasEvent() const;
+            bool isSlave() const;
+            bool isMaster() const;
+
             /*!
              * Checks whether the given set of variables only appears in the update probabilities of the command.
              *
@@ -141,6 +147,7 @@ namespace storm {
             
             // The name of the command.
             std::string actionName;
+            std::string eventName;
             
             // The expression that defines the guard of the command.
             storm::expressions::Expression guardExpression;
@@ -153,6 +160,8 @@ namespace storm {
             
             // A flag indicating whether the command is labeled.
             bool labeled;
+            bool evented;
+            bool slave;
             
             Command copyWithNewUpdates(std::vector<Update>&& newUpdates) const;
         };

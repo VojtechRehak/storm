@@ -136,11 +136,17 @@ namespace storm {
             storm::storage::sparse::StateStorage<StateType> stateStorage;
             
             /// A set of states that still need to be explored.
-            std::deque<std::pair<CompressedState, StateType>> statesToExplore;
+            std::deque<CompressedState> statesToExplore;
             
             /// An optional mapping from state indices to the row groups in which they actually reside. This needs to be
             /// built in case the exploration order is not BFS.
             boost::optional<std::vector<uint_fast64_t>> stateRemapping;
+
+            boost::optional<std::vector<EventVariableInformation<ValueType>>> eventVariables;
+            boost::optional<std::unordered_map<uint_fast64_t, std::map<uint_fast64_t, uint_fast64_t>>> eventToStatesMapping;
+            boost::optional<std::unordered_map<uint_fast64_t, std::vector<uint_fast64_t>>> stateToEventsMapping;
+            boost::optional<std::unordered_map<std::string, uint_fast64_t>> eventNameToId;
+
 
         };
         

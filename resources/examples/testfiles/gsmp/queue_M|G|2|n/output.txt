@@ -1,0 +1,184 @@
+gsmp
+const int K = 5;
+const double REJECT_COST = 1;
+const double ARRIVAL = 9/10;
+
+
+
+module MD2Kqueue
+	station1busy: [0..1] init 0;
+	station2busy: [0..1] init 0;
+	queueCapacity: [0..5] init 5;
+	event service1 = Dirac(1);
+	event service2 = Dirac(1);
+	event _x0 = Exponential(9/10);
+	event _x1 = Exponential((9/10 * 1/2));
+	event _x2 = Exponential((9/10 * 1/2));
+	event _x3 = Exponential(9/10);
+	event _x4 = Exponential(9/10);
+	event _x5 = Exponential(9/10);
+	[reject] (queueCapacity = 0) --_x0 -> (9/10 / 9/10) : true;
+	[accept1First] ((queueCapacity = 5) & (station1busy = 0)) --_x1 -> ((9/10 * 1/2) / (9/10 * 1/2)) : (station1busy' = 1) & (queueCapacity' = (queueCapacity - 1));
+	[accept2First] ((queueCapacity = 5) & (station2busy = 0)) --_x2 -> ((9/10 * 1/2) / (9/10 * 1/2)) : (station2busy' = 1) & (queueCapacity' = (queueCapacity - 1));
+	[accept1Second] ((queueCapacity = 4) & (station1busy = 0)) --_x3 -> (9/10 / 9/10) : (station1busy' = 1) & (queueCapacity' = (queueCapacity - 1));
+	[accept2Second] ((queueCapacity = 4) & (station2busy = 0)) --_x4 -> (9/10 / 9/10) : (station2busy' = 1) & (queueCapacity' = (queueCapacity - 1));
+	[acceptEnqueue] (((queueCapacity > 0) & (station1busy = 1)) & (station2busy = 1)) --_x5 -> (9/10 / 9/10) : (queueCapacity' = (queueCapacity - 1));
+	[serve1last] ((station1busy = 1) & (queueCapacity > 2)) --service1 -> 1 : (station1busy' = 0) & (queueCapacity' = (queueCapacity + 1));
+	[serve1next] ((station1busy = 1) & (queueCapacity < 3)) --service1 -> 1 : (queueCapacity' = (queueCapacity + 1));
+	[serve2last] ((station2busy = 1) & (queueCapacity > 2)) --service2 -> 1 : (station2busy' = 0) & (queueCapacity' = (queueCapacity + 1));
+	[serve2next] ((station2busy = 1) & (queueCapacity < 3)) --service2 -> 1 : (queueCapacity' = (queueCapacity + 1));
+endmodule
+
+rewards
+	[reject] true: REJECT_COST;
+endrewards
+
+
+_x5= Exponential(0.9)
+
+		0	1	2	3	4	5	6	
+	---- group 0/5 ---- 
+0	(	0	0	0	0	0	0	0		)	0
+	---- group 1/5 ---- 
+1	(	0	0	0	0	0	0	0		)	1
+	---- group 2/5 ---- 
+2	(	0	0	0	0	0	0	0		)	2
+	---- group 3/5 ---- 
+3	(	0	0	0	0	1	0	0		)	3
+	---- group 4/5 ---- 
+4	(	0	0	0	0	0	1	0		)	4
+	---- group 5/5 ---- 
+5	(	0	0	0	0	0	0	1		)	5
+		0	1	2	3	4	5	6	
+
+_x4= Exponential(0.9)
+
+		0	1	2	3	
+	---- group 0/1 ---- 
+0	(	0	0	0	0		)	0
+	---- group 1/1 ---- 
+1	(	0	0	0	1		)	1
+		0	1	2	3	
+
+_x3= Exponential(0.9)
+
+		0	1	2	3	
+	---- group 0/2 ---- 
+0	(	0	0	0	0		)	0
+	---- group 1/2 ---- 
+1	(	0	0	0	0		)	1
+	---- group 2/2 ---- 
+2	(	0	0	0	1		)	2
+		0	1	2	3	
+
+_x2= Exponential(0.45)
+
+		0	1	2	
+	---- group 0/0 ---- 
+0	(	0	0	1		)	0
+		0	1	2	
+
+service2= Dirac(1)
+
+		0	1	2	3	4	5	
+	---- group 0/6 ---- 
+0	(	0	0	0	0	0	0		)	0
+	---- group 1/6 ---- 
+1	(	0	0	0	0	0	0		)	1
+	---- group 2/6 ---- 
+2	(	1	0	0	0	0	0		)	2
+	---- group 3/6 ---- 
+3	(	0	1	0	0	0	0		)	3
+	---- group 4/6 ---- 
+4	(	0	0	0	1	0	0		)	4
+	---- group 5/6 ---- 
+5	(	0	0	0	0	1	0		)	5
+	---- group 6/6 ---- 
+6	(	0	0	0	0	0	1		)	6
+		0	1	2	3	4	5	
+
+_x1= Exponential(0.45)
+
+		0	1	
+	---- group 0/0 ---- 
+0	(	0	1		)	0
+		0	1	
+
+_x0= Exponential(0.9)
+
+		0	1	2	3	4	5	6	
+	---- group 0/6 ---- 
+0	(	0	0	0	0	0	0	0		)	0
+	---- group 1/6 ---- 
+1	(	0	0	0	0	0	0	0		)	1
+	---- group 2/6 ---- 
+2	(	0	0	0	0	0	0	0		)	2
+	---- group 3/6 ---- 
+3	(	0	0	0	0	0	0	0		)	3
+	---- group 4/6 ---- 
+4	(	0	0	0	0	0	0	0		)	4
+	---- group 5/6 ---- 
+5	(	0	0	0	0	0	0	0		)	5
+	---- group 6/6 ---- 
+6	(	0	0	0	0	0	0	1		)	6
+		0	1	2	3	4	5	6	
+
+service1= Dirac(1)
+
+		0	1	2	3	4	5	
+	---- group 0/6 ---- 
+0	(	0	0	0	0	0	0		)	0
+	---- group 1/6 ---- 
+1	(	1	0	0	0	0	0		)	1
+	---- group 2/6 ---- 
+2	(	0	0	0	0	0	0		)	2
+	---- group 3/6 ---- 
+3	(	0	0	1	0	0	0		)	3
+	---- group 4/6 ---- 
+4	(	0	0	0	1	0	0		)	4
+	---- group 5/6 ---- 
+5	(	0	0	0	0	1	0		)	5
+	---- group 6/6 ---- 
+6	(	0	0	0	0	0	1		)	6
+		0	1	2	3	4	5	
+
+Time for model construction: 0.113s.
+
+-------------------------------------------------------------- 
+Model type: 	GSMP (sparse)
+States: 	7
+Transitions: 	18
+matrix: 			0	1	2	3	4	5	6	
+	---- group 0/6 ---- 
+0	(	0	1	0	0	0	0	0		)	0
+1	(	0	0	1	0	0	0	0		)	1
+	---- group 1/6 ---- 
+2	(	0	0	0	1	0	0	0		)	2
+3	(	1	0	0	0	0	0	0		)	3
+	---- group 2/6 ---- 
+4	(	0	0	0	1	0	0	0		)	4
+5	(	1	0	0	0	0	0	0		)	5
+	---- group 3/6 ---- 
+6	(	0	0	0	0	1	0	0		)	6
+7	(	0	0	1	0	0	0	0		)	7
+8	(	0	1	0	0	0	0	0		)	8
+	---- group 4/6 ---- 
+9	(	0	0	0	0	0	1	0		)	9
+10	(	0	0	0	1	0	0	0		)	10
+11	(	0	0	0	1	0	0	0		)	11
+	---- group 5/6 ---- 
+12	(	0	0	0	0	0	0	1		)	12
+13	(	0	0	0	0	1	0	0		)	13
+14	(	0	0	0	0	1	0	0		)	14
+	---- group 6/6 ---- 
+15	(	0	0	0	0	0	0	1		)	15
+16	(	0	0	0	0	0	1	0		)	16
+17	(	0	0	0	0	0	1	0		)	17
+		0	1	2	3	4	5	6	
+
+Reward Models:  (default)
+State Labels: 	2 labels
+   * deadlock -> 0 item(s)
+   * init -> 1 item(s)
+Choice Labels: 	none
+-------------------------------------------------------------- 

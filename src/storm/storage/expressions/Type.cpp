@@ -53,8 +53,24 @@ namespace storm {
         bool BaseType::isRationalType() const {
             return false;
         }
+
+        bool BaseType::isEventDistributionType() const {
+            return false;
+        }
+
+        bool BaseType::isEventType() const {
+            return false;
+        }
         
         bool RationalType::isRationalType() const {
+            return true;
+        }
+
+        bool EventDistributionType::isEventDistributionType() const {
+            return true;
+        }
+
+        bool EventType::isEventType() const {
             return true;
         }
         
@@ -101,6 +117,22 @@ namespace storm {
         std::string RationalType::getStringRepresentation() const {
             return "rational";
         }
+
+        uint64_t EventDistributionType::getMask() const {
+            return EventDistributionType::mask;
+        }
+
+        uint64_t EventType::getMask() const {
+            return EventType::mask;
+        }
+
+        std::string EventDistributionType::getStringRepresentation() const {
+            return "distr";
+        }
+
+        std::string EventType::getStringRepresentation() const {
+            return "event";
+        }
         
         bool operator<(BaseType const& first, BaseType const& second) {
             if (first.getMask() < second.getMask()) {
@@ -142,6 +174,14 @@ namespace storm {
         
         bool Type::isNumericalType() const {
             return this->isIntegerType() || this->isRationalType();
+        }
+
+        bool Type::isEventDistributionType() const {
+            return this->innerType->isEventDistributionType();
+        }
+
+        bool Type::isEventType() const {
+            return this->innerType->isEventType();
         }
         
         std::string Type::getStringRepresentation() const {

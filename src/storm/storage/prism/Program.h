@@ -18,6 +18,7 @@
 #include "storm/storage/prism/Composition.h"
 #include "storm/utility/solver.h"
 #include "storm/utility/OsDetection.h"
+#include "storm/storage/prism/EventVariable.h"
 
 namespace storm {
     namespace jani {
@@ -31,7 +32,7 @@ namespace storm {
             /*!
              * An enum for the different model types.
              */
-            enum class ModelType {UNDEFINED, DTMC, CTMC, MDP, CTMDP, MA};
+            enum class ModelType {UNDEFINED, DTMC, CTMC, MDP, CTMDP, MA, GSMP};
             
             enum class ValidityCheckLevel  : unsigned {VALIDINPUT = 0, READYFORPROCESSING = 1};
             
@@ -57,7 +58,7 @@ namespace storm {
              * @param lineNumber The line number in which the program is defined.
              * @param finalModel If set to true, the program is checked for input-validity, as well as some post-processing.
              */
-            Program(std::shared_ptr<storm::expressions::ExpressionManager> manager, ModelType modelType, std::vector<Constant> const& constants, std::vector<BooleanVariable> const& globalBooleanVariables, std::vector<IntegerVariable> const& globalIntegerVariables, std::vector<Formula> const& formulas, std::vector<Module> const& modules, std::map<std::string, uint_fast64_t> const& actionToIndexMap, std::vector<RewardModel> const& rewardModels, std::vector<Label> const& labels, boost::optional<InitialConstruct> const& initialConstruct, boost::optional<SystemCompositionConstruct> const& compositionConstruct, bool prismCompatibility, std::string const& filename = "", uint_fast64_t lineNumber = 0, bool finalModel = true);
+            Program(std::shared_ptr<storm::expressions::ExpressionManager> manager, ModelType modelType, std::vector<Constant> const& constants, std::vector<BooleanVariable> const& globalBooleanVariables, std::vector<IntegerVariable> const& globalIntegerVariables, std::vector<Formula> const& formulas, std::vector<Module> const& modules, std::map<std::string, uint_fast64_t> const& actionToIndexMap, std::vector<RewardModel> const& rewardModels, std::vector<Label> const& labels, boost::optional<InitialConstruct> const& initialConstruct, boost::optional<SystemCompositionConstruct> const& compositionConstruct, std::string const& filename = "", uint_fast64_t lineNumber = 0, bool finalModel = true);
             
             // Provide default implementations for constructors and assignments.
             Program() = default;
@@ -578,6 +579,7 @@ namespace storm {
              * @return The resulting program.
              */
             Program flattenModules(std::shared_ptr<storm::utility::solver::SmtSolverFactory> const& smtSolverFactory = std::shared_ptr<storm::utility::solver::SmtSolverFactory>(new storm::utility::solver::SmtSolverFactory())) const;
+
             
             friend std::ostream& operator<<(std::ostream& stream, Program const& program);
             
@@ -676,7 +678,7 @@ namespace storm {
             
             // The labels that are defined for this model.
             std::vector<Label> labels;
-            
+
             // A mapping from labels to their indices.
             std::map<std::string, uint_fast64_t> labelToIndexMap;
             
@@ -698,7 +700,8 @@ namespace storm {
             // A mapping from variable names to the modules in which they were declared.
             std::map<std::string, uint_fast64_t> variableToModuleIndexMap;
 
-            bool prismCompatibility;
+            bool expSyncBackwardCompatible;
+
         };
         
         std::ostream& operator<<(std::ostream& out, Program::ModelType const& type);

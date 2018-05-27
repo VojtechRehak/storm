@@ -79,7 +79,7 @@ namespace storm {
         Expression ExpressionManager::rational(storm::RationalNumber const& value) const {
             return Expression(std::make_shared<RationalLiteralExpression>(*this, value));
         }
-        
+
         bool ExpressionManager::operator==(ExpressionManager const& other) const {
             return this == &other;
         }
@@ -114,6 +114,21 @@ namespace storm {
             }
             return rationalType.get();
         }
+
+        Type const& ExpressionManager::getEventDistributionType() const {
+            if (!nonlinearDistributionType) {
+                nonlinearDistributionType = Type(this->getSharedPointer(), std::shared_ptr<BaseType>(new EventDistributionType()));
+            }
+            return nonlinearDistributionType.get();   
+        }
+
+        Type const& ExpressionManager::getEventType() const {
+            if (!eventType) {
+                eventType = Type(this->getSharedPointer(), std::shared_ptr<BaseType>(new EventType()));
+            }
+            return eventType.get();
+        }
+
         
         bool ExpressionManager::isValidVariableName(std::string const& name) {
             return name.size() < 2 || name.at(0) != '_' || name.at(1) != '_';
@@ -150,6 +165,14 @@ namespace storm {
             return this->declareVariable(name, this->getRationalType(), auxiliary);
         }
 
+        Variable ExpressionManager::declareEventDistributionVariable(std::string const& name, bool auxiliary){
+            return this->declareVariable(name, this->getEventDistributionType(), auxiliary);
+        }
+
+        Variable ExpressionManager::declareEventVariable(std::string const& name, bool auxiliary) {
+            return this->declareVariable(name, this->getEventType(), auxiliary);    
+        }
+
         Variable ExpressionManager::declareOrGetVariable(std::string const& name, storm::expressions::Type const& variableType, bool auxiliary) {
             return declareOrGetVariable(name, variableType, auxiliary, true);
         }
@@ -168,8 +191,12 @@ namespace storm {
                         offset = numberOfIntegerVariables++ + numberOfBitVectorVariables;
                     } else if (variableType.isBitVectorType()) {
                         offset = numberOfBitVectorVariables++ + numberOfIntegerVariables;
-                    } else {
+                    } else if (variableType.isRationalType()) {
                         offset = numberOfRationalVariables++;
+                    } else if (variableType.isEventDistributionType()) {
+                        offset = numberOfEventDistributionVariables++;
+                    } else if (variableType.isEventType()) {
+                        offset = numberOfEventVariables++;
                     }
                 } else {
                     if (variableType.isBooleanType()) {
@@ -178,8 +205,12 @@ namespace storm {
                         offset = numberOfIntegerVariables++ + numberOfBitVectorVariables;
                     } else if (variableType.isBitVectorType()) {
                         offset = numberOfBitVectorVariables++ + numberOfIntegerVariables;
-                    } else {
+                    } else if (variableType.isRationalType()) {
                         offset = numberOfRationalVariables++;
+                    } else if (variableType.isEventDistributionType()) {
+                        offset = numberOfEventDistributionVariables++;
+                    } else if (variableType.isEventType()) {
+                        offset = numberOfEventVariables++;
                     }
                 }
                 
@@ -230,6 +261,14 @@ namespace storm {
         Variable ExpressionManager::declareFreshRationalVariable(bool auxiliary, const std::string& prefix) {
             return declareFreshVariable(this->getRationalType(), auxiliary, prefix);
         }
+        Variable ExpressionManager::declareFreshEventDistributionVariable(bool auxiliary, const std::string& prefix) {
+            return declareFreshVariable(this->getEventDistributionType(), auxiliary, prefix);
+        }
+
+        Variable ExpressionManager::declareFreshEventVariable(bool auxiliary, std::string const& prefix) {
+            return declareFreshVariable(this->getEventType(), auxiliary, prefix);
+        }
+
         
         uint_fast64_t ExpressionManager::getNumberOfVariables(storm::expressions::Type const& variableType) const {
             if (variableType.isBooleanType()) {
@@ -240,12 +279,15 @@ namespace storm {
                 return numberOfBitVectorVariables;
             } else if (variableType.isRationalType()) {
                 return numberOfRationalVariables;
+            } else if (variableType.isEventDistributionType()){
+                return numberOfEventDistributionVariables;
             }
             return 0;
         }
         
         uint_fast64_t ExpressionManager::getNumberOfVariables() const {
-            return numberOfBooleanVariables + numberOfIntegerVariables + numberOfBitVectorVariables + numberOfRationalVariables;
+            return numberOfBooleanVariables + numberOfIntegerVariables + numberOfBitVectorVariables + 
+            numberOfRationalVariables + numberOfEventDistributionVariables;
         }
         
         uint_fast64_t ExpressionManager::getNumberOfBooleanVariables() const {
@@ -263,6 +305,11 @@ namespace storm {
         uint_fast64_t ExpressionManager::getNumberOfRationalVariables() const {
             return numberOfRationalVariables;
         }
+
+        uint_fast64_t ExpressionManager::getNumberOfEventDistributionVariables() const{
+            return numberOfEventDistributionVariables;
+        }
+
         
         std::string const& ExpressionManager::getVariableName(uint_fast64_t index) const {
             auto indexTypeNamePair = indexToNameMapping.find(index);

@@ -10,6 +10,7 @@
 
 #include "storm/storage/prism/BooleanVariable.h"
 #include "storm/storage/prism/IntegerVariable.h"
+#include "storm/storage/prism/EventVariable.h"
 #include "storm/storage/prism/Command.h"
 #include "storm/utility/OsDetection.h"
 
@@ -27,6 +28,7 @@ namespace storm {
              * @param filename The filename in which the module is defined.
              * @param lineNumber The line number in which the module is defined.
              */
+            Module(std::string const& moduleName, std::vector<storm::prism::BooleanVariable> const& booleanVariables, std::vector<storm::prism::IntegerVariable> const& integerVariables, std::vector<storm::prism::EventVariable> const& eventVariables, std::vector<storm::prism::Command> const& commands, std::string const& filename = "", uint_fast64_t lineNumber = 0);
             Module(std::string const& moduleName, std::vector<storm::prism::BooleanVariable> const& booleanVariables, std::vector<storm::prism::IntegerVariable> const& integerVariables, std::vector<storm::prism::Command> const& commands, std::string const& filename = "", uint_fast64_t lineNumber = 0);
 
             /*!
@@ -42,7 +44,7 @@ namespace storm {
              * @param filename The filename in which the module is defined.
              * @param lineNumber The line number in which the module is defined.
              */
-            Module(std::string const& moduleName, std::vector<storm::prism::BooleanVariable> const& booleanVariables, std::vector<storm::prism::IntegerVariable> const& integerVariables, std::vector<storm::prism::Command> const& commands, std::string const& renamedFromModule, std::map<std::string, std::string> const& renaming, std::string const& filename = "", uint_fast64_t lineNumber = 0);
+            Module(std::string const& moduleName, std::vector<storm::prism::BooleanVariable> const& booleanVariables, std::vector<storm::prism::IntegerVariable> const& integerVariables, std::vector<storm::prism::EventVariable> const& eventVariables, std::vector<storm::prism::Command> const& commands, std::string const& renamedFromModule, std::map<std::string, std::string> const& renaming, std::string const& filename = "", uint_fast64_t lineNumber = 0);
 
             // Create default implementations of constructors/assignment.
             Module() = default;
@@ -64,6 +66,13 @@ namespace storm {
              * @return The number of integer variables in the module.
              */
             std::size_t getNumberOfIntegerVariables() const;
+
+            /*!
+             * Retrieves the number of event variables in the module.
+             *
+             * @return The number of event variables in the module.
+             */
+            std::size_t getNumberOfEventVariables() const;
             
             /*!
              * Retrieves a reference to the boolean variable with the given name.
@@ -94,6 +103,21 @@ namespace storm {
              * @return The integer variables of the module.
              */
             std::vector<storm::prism::IntegerVariable> const& getIntegerVariables() const;
+
+            /*!
+             * Retrieves a reference to the integer variable with the given name.
+             *
+             * @param variableName The name of the integer variable to retrieve.
+             * @return A reference to the integer variable with the given name.
+             */
+            storm::prism::EventVariable const& getEventVariable(std::string const& variableName) const;
+
+            /*!
+             * Retrieves the event variables of the module.
+             *
+             * @return The event variables of the module.
+             */
+            std::vector<storm::prism::EventVariable> const& getEventVariables() const;
 
             /*!
              * Retrieves all expression variables used by this module.
@@ -258,6 +282,12 @@ namespace storm {
 
             // A mapping from integer variables to the corresponding indices in the vector.
             std::map<std::string, uint_fast64_t> integerVariableToIndexMap;
+
+            // A list of event variables
+            std::vector<storm::prism::EventVariable> eventVariables;
+
+            // A mapping from integer variables to the corresponding indices in the vector.
+            std::map<std::string, uint_fast64_t> eventVariableToIndexMap;
 
             // The commands associated with the module.
             std::vector<storm::prism::Command> commands;

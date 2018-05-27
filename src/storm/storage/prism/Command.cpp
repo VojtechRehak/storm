@@ -2,7 +2,10 @@
 
 namespace storm {
     namespace prism {
-        Command::Command(uint_fast64_t globalIndex, bool markovian, uint_fast64_t actionIndex, std::string const& actionName, storm::expressions::Expression const& guardExpression, std::vector<storm::prism::Update> const& updates, std::string const& filename, uint_fast64_t lineNumber) : LocatedInformation(filename, lineNumber), actionIndex(actionIndex), markovian(markovian), actionName(actionName), guardExpression(guardExpression), updates(updates), globalIndex(globalIndex), labeled(actionName != "") {
+        Command::Command(uint_fast64_t globalIndex, bool markovian, uint_fast64_t actionIndex, std::string const& actionName, std::string const& eventName, storm::expressions::Expression const& guardExpression, std::vector<storm::prism::Update> const& updates, std::string const& filename, uint_fast64_t lineNumber) : LocatedInformation(filename, lineNumber), actionIndex(actionIndex), markovian(markovian), actionName(actionName), eventName(eventName), guardExpression(guardExpression), updates(updates), globalIndex(globalIndex), labeled(actionName != ""), evented(eventName != ""), slave(eventName == "slave") {
+            // Nothing to do here.
+        }
+        Command::Command(uint_fast64_t globalIndex, bool markovian, uint_fast64_t actionIndex, std::string const& actionName, storm::expressions::Expression const& guardExpression, std::vector<storm::prism::Update> const& updates, std::string const& filename, uint_fast64_t lineNumber) : LocatedInformation(filename, lineNumber), actionIndex(actionIndex), markovian(markovian), actionName(actionName), guardExpression(guardExpression), updates(updates), globalIndex(globalIndex), labeled(false), evented(eventName != ""), slave(false) {
             // Nothing to do here.
         }
 
@@ -20,6 +23,10 @@ namespace storm {
         
         std::string const& Command::getActionName() const {
             return this->actionName;
+        }
+
+        std::string const& Command::getEventName() const{
+            return eventName;
         }
         
         storm::expressions::Expression const& Command::getGuardExpression() const {
@@ -50,13 +57,25 @@ namespace storm {
                 newUpdates.emplace_back(update.substitute(substitution));
             }
             
-            return Command(this->getGlobalIndex(), this->isMarkovian(), this->getActionIndex(), this->getActionName(), this->getGuardExpression().substitute(substitution).simplify(), newUpdates, this->getFilename(), this->getLineNumber());
+            return Command(this->getGlobalIndex(), this->isMarkovian(), this->getActionIndex(), this->getActionName(), this->getEventName(), this->getGuardExpression().substitute(substitution).simplify(), newUpdates, this->getFilename(), this->getLineNumber());
         }
         
         bool Command::isLabeled() const {
             return labeled;
         }
-        
+
+        bool Command::hasEvent() const {
+            return evented;
+        }
+
+        bool Command::isSlave() const {
+            return evented && slave;
+        }
+
+        bool Command::isMaster() const {
+            return evented && !slave;
+        }
+
         bool Command::containsVariablesOnlyInUpdateProbabilities(std::set<storm::expressions::Variable> const& undefinedConstantVariables) const {
             if (this->getGuardExpression().containsVariable(undefinedConstantVariables)) {
                 return false;
@@ -87,7 +106,7 @@ namespace storm {
         }
         
         Command Command::copyWithNewUpdates(std::vector<Update> && newUpdates) const {
-            return Command(this->globalIndex, this->markovian, this->getActionIndex(), this->getActionName(), guardExpression, newUpdates, this->getFilename(), this->getLineNumber());
+            return Command(this->globalIndex, this->markovian, this->getActionIndex(), this->getActionName(), this->getEventName(), guardExpression, newUpdates, this->getFilename(), this->getLineNumber());
         }
         
         std::ostream& operator<<(std::ostream& stream, Command const& command) {
@@ -96,7 +115,11 @@ namespace storm {
             } else {
                 stream << "[" << command.getActionName() << "] ";
             }
-            stream << command.getGuardExpression() << " -> ";
+            stream << command.getGuardExpression();
+            if (command.evented){
+                stream << " --" << command.eventName;
+            }
+            stream << " -> ";
             for (uint_fast64_t i = 0; i < command.getUpdates().size(); ++i) {
                 stream << command.getUpdate(i);
                 if (i < command.getUpdates().size() - 1) {

@@ -43,6 +43,27 @@ namespace storm {
             virtual bool isIntegerType() const;
             virtual bool isBitVectorType() const;
             virtual bool isRationalType() const;
+            virtual bool isEventDistributionType() const;
+            virtual bool isEventType() const;
+        };
+
+        class EventDistributionType : public BaseType {
+        public:
+            virtual uint64_t getMask() const override;
+            virtual std::string getStringRepresentation() const override;
+            virtual bool isEventDistributionType() const override;
+        private:
+            static const uint64_t mask = (1ull << 59);
+        };
+
+        class EventType : public BaseType {
+        public:
+            virtual uint64_t getMask() const override;
+            virtual std::string getStringRepresentation() const override;
+            virtual bool isEventType() const override;
+
+        private:
+            static const uint64_t mask = (1ull << 58);
         };
 
         class BooleanType : public BaseType {
@@ -186,6 +207,10 @@ namespace storm {
              * @return True iff the type is a numerical one.
              */
             bool isNumericalType() const;
+
+            bool isEventDistributionType() const;
+
+            bool isEventType() const;
             
             /*!
              * Retrieves the bit width of the type, provided that it is a bitvector type.

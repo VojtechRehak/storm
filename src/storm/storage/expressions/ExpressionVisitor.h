@@ -3,6 +3,8 @@
 
 #include <boost/any.hpp>
 #include <boost/none.hpp>
+#include "storm/utility/macros.h"
+#include "storm/exceptions/InvalidArgumentException.h"
 
 namespace storm {
     namespace expressions {
@@ -17,6 +19,7 @@ namespace storm {
         class BooleanLiteralExpression;
         class IntegerLiteralExpression;
         class RationalLiteralExpression;
+        class EventDistributionExpression;
         
         class ExpressionVisitor {
         public:
@@ -30,6 +33,9 @@ namespace storm {
             virtual boost::any visit(BooleanLiteralExpression const& expression, boost::any const& data) = 0;
             virtual boost::any visit(IntegerLiteralExpression const& expression, boost::any const& data) = 0;
             virtual boost::any visit(RationalLiteralExpression const& expression, boost::any const& data) = 0;
+            virtual boost::any visit(EventDistributionExpression const& expression, boost::any const& data) {
+                STORM_LOG_THROW(false, storm::exceptions::InvalidArgumentException, "Invalid expression for this visitor.");
+            }
         };
     }
 }

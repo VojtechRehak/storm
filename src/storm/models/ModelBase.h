@@ -87,7 +87,7 @@ namespace storm {
             virtual bool isSparseModel() const;
             
             /*!
-             * Checks whether the model is a symbolic model.
+             * Checks whether the model is a … model.
              *
              * @return True iff the model is a symbolic model.
              */

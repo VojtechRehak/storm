@@ -22,7 +22,7 @@ include(CheckCSourceCompiles)
 ##	CMake options of Storm
 ##
 #############################################################
-option(STORM_DEVELOPER "Sets whether the development mode is used." OFF)
+option(STORM_DEVELOPER "Sets whether the development mode is used." ON)
 option(STORM_ALLWARNINGS "Compile with even more warnings" OFF)
 option(STORM_USE_LTO "Sets whether link-time optimizations are enabled." ON)
 MARK_AS_ADVANCED(STORM_USE_LTO)
@@ -205,6 +205,9 @@ endif()
 if (STORM_FORCE_POPCNT)
 	set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mpopcnt")
 endif()
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -ferror-limit=40")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g")
+
 
 # TODO: remove forcing the old version of optional as soon as the related Spirit bug is fixed:
 # https://svn.boost.org/trac/boost/ticket/12349

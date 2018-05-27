@@ -36,6 +36,15 @@ namespace storm {
         bool BaseExpression::hasBooleanType() const {
             return this->getType().isBooleanType();
         }
+
+        bool BaseExpression::hasEventDistributionType() const {
+            return this->getType().isEventDistributionType();
+        }
+
+        EventDistributionTypes BaseExpression::getDistributionType() const {
+            STORM_LOG_THROW(false, storm::exceptions::InvalidTypeException, "querried expression is not a distribution expression");
+        }
+
         
         bool BaseExpression::hasRationalType() const {
             return this->getType().isRationalType();

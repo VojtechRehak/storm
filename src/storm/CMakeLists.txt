@@ -29,7 +29,7 @@ if (ADDITIONAL_LINK_DIRS)
 endif(ADDITIONAL_LINK_DIRS)
 
 # Disable Debug compiler flags for PrismParser to lessen memory consumption during compilation
-SET_SOURCE_FILES_PROPERTIES(${PROJECT_SOURCE_DIR}/src/storm/parser/PrismParser.cpp PROPERTIES COMPILE_FLAGS -g0)
+SET_SOURCE_FILES_PROPERTIES(${PROJECT_SOURCE_DIR}/src/storm/parser/PrismParser.cpp PROPERTIES COMPILE_FLAGS -g3)
 
 ###############################################################################
 ##                                                                            

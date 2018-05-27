@@ -53,7 +53,7 @@ namespace storm {
         }
         
         template<typename ValueType, typename StateType>
-        storm::models::sparse::StateLabeling NextStateGenerator<ValueType, StateType>::label(storm::storage::sparse::StateStorage<StateType> const& stateStorage, std::vector<StateType> const& initialStateIndices, std::vector<StateType> const& deadlockStateIndices, std::vector<std::pair<std::string, storm::expressions::Expression>> labelsAndExpressions) {
+        storm::models::sparse::StateLabeling NextStateGenerator<ValueType, StateType>::label(storm::storage::BitVectorHashMap<StateType> const& states, std::vector<StateType> const& initialStateIndices, std::vector<StateType> const& deadlockStateIndices, std::vector<std::pair<std::string, storm::expressions::Expression>> labelsAndExpressions) {
             
             for (auto const& expression : this->options.getExpressionLabels()) {
                 std::stringstream stream;
@@ -67,14 +67,12 @@ namespace storm {
             labelsAndExpressions.resize(std::distance(labelsAndExpressions.begin(), it));
             
             // Prepare result.
-            storm::models::sparse::StateLabeling result(stateStorage.getNumberOfStates());
+            storm::models::sparse::StateLabeling result(states.size());
             
             // Initialize labeling.
             for (auto const& label : labelsAndExpressions) {
                 result.addLabel(label.first);
             }
-            
-            storm::storage::BitVectorHashMap<StateType> const& states = stateStorage.stateToId;
             for (auto const& stateIndexPair : states) {
                 unpackStateIntoEvaluator(stateIndexPair.first, variableInformation, *this->evaluator);
                 
@@ -155,6 +153,12 @@ namespace storm {
             STORM_LOG_ERROR_COND(!options.isBuildChoiceOriginsSet(), "Generating choice origins is not supported for the considered model format.");
             return nullptr;
         }
+
+        template<typename ValueType, typename StateType>
+        void NextStateGenerator<ValueType, StateType>::mapEvents(std::vector<EventVariableInformation<ValueType>>& eventVariables, std::unordered_map<std::string, uint_fast64_t>& eventNameToId) const {
+            // intentionally left empty
+        }
+
 
         template class NextStateGenerator<double>;
 

@@ -46,7 +46,10 @@ namespace storm {
             if (constant.getType().isRationalType()) {
                 stream << "double" << " ";
             } else {
-                stream << constant.getType() << " ";
+                if (constant.getType().isEventDistributionType()){
+                    stream << "distribution" << " ";
+                } else
+                    stream << constant.getType() << " ";
             }
             stream << constant.getName();
             if (constant.isDefined()) {

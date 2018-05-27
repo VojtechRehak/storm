@@ -115,6 +115,15 @@ namespace storm {
              * @return The resulting expression.
              */
             Expression rational(storm::RationalNumber const& value) const;
+
+            /*!
+             * Creates an expression that characterizes the given nonlinear distribution literal.
+             *
+             * @param value The value of the rational literal.
+             * @return The resulting expression.
+             */
+            // Expression EventDistribution(EventDistributionTypes type, Expression const& exp1, Expression const& exp2) const;
+            // Expression EventDistribution(EventDistributionTypes type, Expression const& exp1) const;
             
             /*!
              * Compares the two expression managers for equality, which holds iff they are the very same object.
@@ -149,6 +158,21 @@ namespace storm {
              * @return The rational type.
              */
             Type const& getRationalType() const;
+
+            /*!
+             * Retrieves the nonlinear distribution type.
+             *
+             * @return The distribution type.
+             */
+            Type const& getEventDistributionType() const;
+
+            /*!
+             * Retrieves the event type.
+             *
+             * @return The event type.
+             */
+            Type const& getEventType() const;
+
 
             /*!
              * Declares a variable that is a copy of the provided variable (i.e. has the same type).
@@ -211,6 +235,20 @@ namespace storm {
              */
             Variable declareRationalVariable(std::string const& name, bool auxiliary = false);
             
+            /*!
+             * Declares a new nonlinear distribution variable with a name that must not yet exist and its corresponding type. Note that
+             * the name must not start with two underscores since these variables are reserved for internal use only.
+             *
+             * @param name The name of the variable.
+             * @param auxiliary A flag indicating whether the new variable should be tagged as an auxiliary variable.
+             * @return The newly declared variable.
+             */
+            Variable declareEventDistributionVariable(std::string const& name, bool auxiliary = false);
+            //end code
+
+            Variable declareEventVariable(std::string const& name, bool auxiliary = false);
+
+
             /*!
              * Declares a variable with the given name if it does not yet exist.
              *
@@ -287,6 +325,18 @@ namespace storm {
             Variable declareFreshIntegerVariable(bool auxiliary = false, std::string const& prefix = "_x");
             
             /*!
+             * Declares a variable with integer type whose name is guaranteed to be unique and not yet in use.
+             *
+             * @param auxiliary A flag indicating whether the new variable should be tagged as an auxiliary variable.
+             * @param prefix The prefix which should be used.
+             * @return The variable.
+             */
+            Variable declareFreshEventDistributionVariable(bool auxiliary = false, std::string const& prefix = "_x");
+
+            Variable declareFreshEventVariable(bool auxiliary = false, std::string const& prefix = "_x");
+            
+
+            /*!
              * Retrieves the number of variables.
              *
              * @return The number of variables.
@@ -320,6 +370,14 @@ namespace storm {
              * @return The number of rational variables.
              */
             uint_fast64_t getNumberOfRationalVariables() const;
+
+            /*!
+             * Retrieves the number of nonlinear distribution variables.
+             *
+             * @return The number of nonlinear distribution variables.
+             */
+            uint_fast64_t getNumberOfEventDistributionVariables() const;
+            // end code
             
             /*!
              * Retrieves the name of the variable with the given index.
@@ -443,6 +501,9 @@ namespace storm {
             uint_fast64_t numberOfIntegerVariables;
             uint_fast64_t numberOfBitVectorVariables;
             uint_fast64_t numberOfRationalVariables;
+            uint_fast64_t numberOfEventDistributionVariables;
+            uint_fast64_t numberOfEventVariables;
+            // end code
             
             // The number of declared auxiliary variables.
             uint_fast64_t numberOfAuxiliaryVariables;
@@ -452,6 +513,9 @@ namespace storm {
             uint_fast64_t numberOfAuxiliaryIntegerVariables;
             uint_fast64_t numberOfAuxiliaryBitVectorVariables;
             uint_fast64_t numberOfAuxiliaryRationalVariables;
+            uint_fast64_t numberOfAuxiliaryEventDistributionVariables;
+            uint_fast64_t numberofAuxiliaryEventVariables;
+            // end code
             
             // A counter used to create fresh variables.
             uint_fast64_t freshVariableCounter;
@@ -461,6 +525,9 @@ namespace storm {
             mutable boost::optional<Type> integerType;
             mutable std::unordered_set<Type> bitvectorTypes;
             mutable boost::optional<Type> rationalType;
+            mutable boost::optional<Type> nonlinearDistributionType;
+            mutable boost::optional<Type> eventType;
+            // mutable boost::optional<Type> eventType;
 
             // A mask that can be used to query whether a variable is an auxiliary variable.
             static const uint64_t auxiliaryMask = (1ull << 50);

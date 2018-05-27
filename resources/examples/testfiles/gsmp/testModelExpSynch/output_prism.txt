@@ -1,0 +1,19 @@
+Exporting list of reachable states in plain text format below:
+(first,second,third)
+0:(0,0,0)
+1:(1,1,1)
+
+Exporting transition matrix in plain text format below:
+GSMP with 2 events:
+Event "timeoutEvent"=Dirac distribution(14.5)
+1: {0=1.0}
+Event "<[<[firstModEvent]PRODUCT_WITH[secondModEvent]>]PRODUCT_WITH[<CTMCevent_[lol] third=0-> 5 : (third'=1)>]>"=Exponential distribution(125.0)
+0: {1=1.0}
+
+Omitting state reward export as there are no reward structures
+
+Omitting transition reward export as there are no reward structures
+
+Exporting labels and satisfying states in plain text format below:
+0="init" 1="deadlock"
+0: 0

@@ -14,6 +14,7 @@
 #include "storm/storage/SparseMatrix.h"
 #include "storm/storage/BitVector.h"
 #include "storm/models/sparse/StandardRewardModel.h"
+#include "storm/generator/VariableInformation.h"
 
 #include "storm/utility/macros.h"
 #include "storm/exceptions/InvalidOperationException.h"
@@ -24,14 +25,21 @@ namespace storm {
             
             template<typename ValueType, typename RewardModelType = storm::models::sparse::StandardRewardModel<ValueType>>
             struct ModelComponents {
+
                 
                 ModelComponents(storm::storage::SparseMatrix<ValueType> const& transitionMatrix,
                                 storm::models::sparse::StateLabeling const& stateLabeling = storm::models::sparse::StateLabeling(),
                                 std::unordered_map<std::string, RewardModelType> const& rewardModels =  std::unordered_map<std::string, RewardModelType>(),
                                 bool rateTransitions = false,
                                 boost::optional<storm::storage::BitVector> const& markovianStates = boost::none,
-                                boost::optional<storm::storage::SparseMatrix<storm::storage::sparse::state_type>> const& player1Matrix = boost::none)
-                        : transitionMatrix(transitionMatrix), stateLabeling(stateLabeling), rewardModels(rewardModels), rateTransitions(rateTransitions), markovianStates(markovianStates), player1Matrix(player1Matrix) {
+                                boost::optional<storm::storage::SparseMatrix<storm::storage::sparse::state_type>> const& player1Matrix = boost::none,
+                                boost::optional<std::vector<generator::EventVariableInformation<ValueType>>> const& eventVariables = boost::none,
+                                boost::optional<std::unordered_map<uint_fast64_t, std::map<uint_fast64_t, uint_fast64_t>>> const& eventToStatesMapping = boost::none,
+                                boost::optional<std::unordered_map<uint_fast64_t, std::vector<uint_fast64_t>>> const& stateToEventsMapping = boost::none,
+                                boost::optional<std::unordered_map<std::string, uint_fast64_t>> const& eventNameToId = boost::none)
+                        : transitionMatrix(transitionMatrix), stateLabeling(stateLabeling), rewardModels(rewardModels), rateTransitions(rateTransitions), 
+                                markovianStates(markovianStates), player1Matrix(player1Matrix), eventVariables(eventVariables), 
+                                eventToStatesMapping(eventToStatesMapping), stateToEventsMapping(stateToEventsMapping), eventNameToId(eventNameToId) {
                     // Intentionally left empty
                 }
               
@@ -40,13 +48,22 @@ namespace storm {
                                 std::unordered_map<std::string, RewardModelType>&& rewardModels =  std::unordered_map<std::string, RewardModelType>(),
                                 bool rateTransitions = false,
                                 boost::optional<storm::storage::BitVector>&& markovianStates = boost::none,
-                                boost::optional<storm::storage::SparseMatrix<storm::storage::sparse::state_type>>&& player1Matrix = boost::none)
-                        : transitionMatrix(std::move(transitionMatrix)), stateLabeling(std::move(stateLabeling)), rewardModels(std::move(rewardModels)), rateTransitions(rateTransitions), markovianStates(std::move(markovianStates)), player1Matrix(std::move(player1Matrix)) {
+                                boost::optional<storm::storage::SparseMatrix<storm::storage::sparse::state_type>>&& player1Matrix = boost::none,
+                                boost::optional<std::vector<generator::EventVariableInformation<ValueType>>> && eventVariables = boost::none,
+                                boost::optional<std::unordered_map<uint_fast64_t, std::map<uint_fast64_t, uint_fast64_t>>> && eventToStatesMapping = boost::none,
+                                boost::optional<std::unordered_map<uint_fast64_t, std::vector<uint_fast64_t>>> && stateToEventsMapping = boost::none,
+                                boost::optional<std::unordered_map<std::string, uint_fast64_t>> && eventNameToId = boost::none)
+                        : transitionMatrix(std::move(transitionMatrix)), stateLabeling(std::move(stateLabeling)), 
+                                rewardModels(std::move(rewardModels)), rateTransitions(rateTransitions), 
+                                markovianStates(std::move(markovianStates)),
+                                player1Matrix(std::move(player1Matrix)),
+                                eventVariables(std::move(eventVariables)),
+                                eventToStatesMapping(std::move(eventToStatesMapping)),
+                                stateToEventsMapping(std::move(stateToEventsMapping)),
+                                eventNameToId(std::move(eventNameToId)) {
                     // Intentionally left empty
                 }
-                
-                
-                
+
                 
                 // General components (applicable for all model types):
                 
@@ -65,7 +82,14 @@ namespace storm {
 
                 
                 // Continuous time specific components (CTMCs, Markov Automata):
-                
+
+                // stores indices of row groups and rows that belong to an event and particular state (only for GSMP).
+                boost::optional<std::vector<generator::EventVariableInformation<ValueType>>> eventVariables;
+                boost::optional<std::unordered_map<uint_fast64_t, std::map<uint_fast64_t, uint_fast64_t>>> eventToStatesMapping;
+                boost::optional<std::unordered_map<uint_fast64_t, std::vector<uint_fast64_t>>> stateToEventsMapping;
+                boost::optional<std::unordered_map<std::string, uint_fast64_t>> eventNameToId;
+
+
                 // True iff the transition values (for Markovian choices) are interpreted as rates.
                 bool rateTransitions;
                 

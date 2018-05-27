@@ -9,3 +9,4 @@
 #include "storm/storage/expressions/UnaryNumericalFunctionExpression.h"
 #include "storm/storage/expressions/VariableExpression.h"
 #include "storm/storage/expressions/Expression.h"
+#include "storm/storage/expressions/EventDistributionExpression.h"

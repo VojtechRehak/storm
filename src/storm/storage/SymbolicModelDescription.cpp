@@ -63,6 +63,7 @@ namespace storm {
                     case storm::prism::Program::ModelType::CTMC: return SymbolicModelDescription::ModelType::CTMC;
                     case storm::prism::Program::ModelType::MDP: return SymbolicModelDescription::ModelType::MDP;
                     case storm::prism::Program::ModelType::MA: return SymbolicModelDescription::ModelType::MA;
+                    case storm::prism::Program::ModelType::GSMP: return SymbolicModelDescription::ModelType::GSMP;
                     default:
                         STORM_LOG_THROW(false, storm::exceptions::InvalidTypeException, "Expected other PRISM model type.");
                 }

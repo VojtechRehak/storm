@@ -38,6 +38,7 @@ namespace storm {
             virtual boost::any visit(BooleanLiteralExpression const& expression, boost::any const& data) override;
             virtual boost::any visit(IntegerLiteralExpression const& expression, boost::any const& data) override;
             virtual boost::any visit(RationalLiteralExpression const& expression, boost::any const& data) override;
+            virtual boost::any visit(EventDistributionExpression const& expression, boost::any const& data) override;
             
         private:
             // A mapping of variables to expressions with which they shall be replaced.

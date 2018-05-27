@@ -60,7 +60,10 @@ namespace storm {
                     STORM_LOG_THROW(stateCount == this->getTransitionMatrix().getRowGroupCount(), storm::exceptions::IllegalArgumentException, "Can not create nondeterministic model: Number of row groups of transition matrix does not match state count.");
                     STORM_LOG_THROW(stateCount == this->getTransitionMatrix().getColumnCount(), storm::exceptions::IllegalArgumentException, "Can not create nondeterministic model: Number of columns of transition matrix does not match state count.");
                     STORM_LOG_ERROR_COND(!components.player1Matrix.is_initialized(), "Player 1 matrix given for a model that is no stochastic game (will be ignored).");
-                } else {
+                } else if(this->isOfType(ModelType::Gsmp)) {
+                    // TODO(Roman): do some checks here 
+                } 
+                else {
                     STORM_LOG_THROW(this->isOfType(ModelType::S2pg), storm::exceptions::IllegalArgumentException, "Invalid model type.");
                     STORM_LOG_THROW(components.player1Matrix.is_initialized(), storm::exceptions::IllegalArgumentException, "No player 1 matrix given for stochastic game.");
                     STORM_LOG_ASSERT(components.player1Matrix->isProbabilistic(), "Can not create stochastic game: There is a row in the p1 matrix with not exactly one entry.");
@@ -279,6 +282,7 @@ namespace storm {
                 out << "Model type: \t" << this->getType() << " (sparse)" << std::endl;
                 out << "States: \t" << this->getNumberOfStates() << std::endl;
                 out << "Transitions: \t" << this->getNumberOfTransitions() << std::endl;
+                out << "matrix: \t" << this->getTransitionMatrix() << std::endl;
             }
             
             template<typename ValueType, typename RewardModelType>

@@ -14,7 +14,7 @@ namespace storm {
     
     namespace api {
         
-        storm::prism::Program parseProgram(std::string const& filename, bool prismCompatibility = false);
+        storm::prism::Program parseProgram(std::string const& filename);
         
         std::pair<storm::jani::Model, std::map<std::string, storm::jani::Property>> parseJaniModel(std::string const& filename);
         

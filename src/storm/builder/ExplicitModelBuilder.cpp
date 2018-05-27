@@ -11,7 +11,7 @@
 #include "storm/storage/expressions/ExpressionManager.h"
 
 #include "storm/settings/modules/CoreSettings.h"
-#include "storm/settings/modules/BuildSettings.h"
+#include "storm/settings/modules/IOSettings.h"
 
 #include "storm/builder/RewardModelBuilder.h"
 #include "storm/builder/ChoiceInformationBuilder.h"
@@ -38,12 +38,13 @@
 #include "storm/exceptions/WrongFormatException.h"
 #include "storm/exceptions/InvalidArgumentException.h"
 #include "storm/exceptions/InvalidOperationException.h"
+#include "storm/storage/expressions/EventDistributionTypes.h"
 
 namespace storm {
     namespace builder {
                         
         template <typename ValueType, typename RewardModelType, typename StateType>
-        ExplicitModelBuilder<ValueType, RewardModelType, StateType>::Options::Options() : explorationOrder(storm::settings::getModule<storm::settings::modules::BuildSettings>().getExplorationOrder()) {
+        ExplicitModelBuilder<ValueType, RewardModelType, StateType>::Options::Options() : explorationOrder(storm::settings::getModule<storm::settings::modules::IOSettings>().getExplorationOrder()) {
             // Intentionally left empty.
         }
         
@@ -75,6 +76,8 @@ namespace storm {
                     return storm::utility::builder::buildModelFromComponents(storm::models::ModelType::Mdp, buildModelComponents());
                 case storm::generator::ModelType::MA:
                     return storm::utility::builder::buildModelFromComponents(storm::models::ModelType::MarkovAutomaton, buildModelComponents());
+                case storm::generator::ModelType::GSMP:
+                    return storm::utility::builder::buildModelFromComponents(storm::models::ModelType::Gsmp, buildModelComponents());    
                 default:
                     STORM_LOG_THROW(false, storm::exceptions::WrongFormatException, "Error while creating model: cannot handle this model type.");
             }
@@ -89,22 +92,20 @@ namespace storm {
             // Check, if the state was already registered.
             std::pair<StateType, std::size_t> actualIndexBucketPair = stateStorage.stateToId.findOrAddAndGetBucket(state, newIndex);
             
-            StateType actualIndex = actualIndexBucketPair.first;
-            
-            if (actualIndex == newIndex) {
+            if (actualIndexBucketPair.first == newIndex) {
                 if (options.explorationOrder == ExplorationOrder::Dfs) {
-                    statesToExplore.emplace_front(state, actualIndex);
+                    statesToExplore.push_front(state);
 
                     // Reserve one slot for the new state in the remapping.
                     stateRemapping.get().push_back(storm::utility::zero<StateType>());
                 } else if (options.explorationOrder == ExplorationOrder::Bfs) {
-                    statesToExplore.emplace_back(state, actualIndex);
+                    statesToExplore.push_back(state);
                 } else {
                     STORM_LOG_ASSERT(false, "Invalid exploration order.");
                 }
             }
             
-            return actualIndex;
+            return actualIndexBucketPair.first;
         }
         
         template <typename ValueType, typename RewardModelType, typename StateType>
@@ -133,6 +134,16 @@ namespace storm {
             uint_fast64_t currentRowGroup = 0;
             uint_fast64_t currentRow = 0;
 
+            bool shouldMapEvents = generator->getModelType() == storm::generator::ModelType::GSMP;
+            // mapping from event id -> index of row in the matrix if present 
+            if (shouldMapEvents) {
+                this->eventToStatesMapping = std::unordered_map<uint_fast64_t, std::map<uint_fast64_t, uint_fast64_t>>();
+                this->stateToEventsMapping = std::unordered_map<uint_fast64_t, std::vector<uint_fast64_t>>();
+                this->eventNameToId = std::unordered_map<std::string, uint_fast64_t>();
+                this->eventVariables = std::vector<EventVariableInformation<ValueType>>();
+                this->generator->mapEvents(eventVariables.get(), eventNameToId.get());
+            }
+
             auto timeOfStart = std::chrono::high_resolution_clock::now();
             auto timeOfLastMessage = std::chrono::high_resolution_clock::now();
             uint64_t numberOfExploredStates = 0;
@@ -141,8 +152,8 @@ namespace storm {
             // Perform a search through the model.
             while (!statesToExplore.empty()) {
                 // Get the first state in the queue.
-                CompressedState currentState = statesToExplore.front().first;
-                StateType currentIndex = statesToExplore.front().second;
+                CompressedState currentState = statesToExplore.front();
+                StateType currentIndex = stateStorage.stateToId.getValue(currentState);
                 statesToExplore.pop_front();
                 
                 // If the exploration order differs from breadth-first, we remember that this row group was actually
@@ -150,10 +161,9 @@ namespace storm {
                 if (options.explorationOrder != ExplorationOrder::Bfs) {
                     stateRemapping.get()[currentIndex] = currentRowGroup;
                 }
+
                 
-                if (currentIndex % 100000 == 0) {
-                    STORM_LOG_TRACE("Exploring state with id " << currentIndex << ".");
-                }
+                STORM_LOG_TRACE("Exploring state with id " << currentIndex << ".");
                 
                 generator->load(currentState);
                 storm::generator::StateBehavior<ValueType, StateType> behavior = generator->expand(stateToIdCallback);
@@ -165,6 +175,7 @@ namespace storm {
                         if (behavior.wasExpanded()) {
                             this->stateStorage.deadlockStateIndices.push_back(currentIndex);
                         }
+
                         
                         if (markovianStates) {
                             markovianStates.get().grow(currentRowGroup + 1, false);
@@ -176,6 +187,16 @@ namespace storm {
                         }
                         
                         transitionMatrixBuilder.addNextValue(currentRow, currentIndex, storm::utility::one<ValueType>());
+
+                        if (generator->getModelType() == storm::generator::ModelType::GSMP) {
+                            // we need to create a new GSMP event for the deadlock state
+                            uint_fast64_t eventId = eventVariables.get().size();
+                            eventVariables.get().push_back(EventVariableInformation<ValueType>(storm::utility::one<ValueType>(), storm::expressions::EventDistributionTypes::Exp));
+                            std::string new_name = "deadlock_event_" + std::to_string(eventId);
+                            eventNameToId.get()[new_name] = eventId;
+                            eventToStatesMapping.get()[eventId][currentRowGroup] = currentRow;
+                            stateToEventsMapping.get()[currentIndex].push_back(eventId);
+                        }
                         
                         for (auto& rewardModelBuilder : rewardModelBuilders) {
                             if (rewardModelBuilder.hasStateRewards()) {
@@ -229,6 +250,56 @@ namespace storm {
                         // Add the probabilistic behavior to the matrix.
                         for (auto const& stateProbabilityPair : choice) {
                             transitionMatrixBuilder.addNextValue(currentRow, stateProbabilityPair.first, stateProbabilityPair.second);
+                        }
+
+                        if (shouldMapEvents && choice.hasEvents()) {
+                            uint_fast64_t eventId;
+                            auto& eventVariables = this->eventVariables.get();
+                            auto& eventNameToId = this->eventNameToId.get();
+                            auto& eventToStatesMapping = this->eventToStatesMapping.get();
+                            auto& stateToEventsMapping = this->stateToEventsMapping.get();
+
+                            // if choice has multiple events, we have to create a new event with distribution calculated as product of its current distributions
+                            if (choice.hasMultipleEvents()) {
+                                std::string new_name;
+                                bool first = true;
+                                for (std::string const& eventName : choice.getEventNames()) {
+
+                                    STORM_LOG_THROW(eventVariables[eventNameToId[eventName]].distributionType == storm::expressions::EventDistributionTypes::Exp, storm::exceptions::WrongFormatException, "Invalid GSMP operation, non-exponential event \"" << eventName << "\" fusing with exponential events!");
+
+                                    if (first) {
+                                        first = false;
+                                    } else {
+                                        new_name += " X ";
+                                    }
+                                    new_name += eventName;
+                                }
+                                auto it = eventNameToId.find(new_name);
+                                if (it == eventNameToId.end()) {
+
+                                    ValueType expRate = storm::utility::one<ValueType>();
+                                    for (std::string const& eventName : choice.getEventNames()) {
+                                        auto const& event = eventVariables.at(eventNameToId.at(eventName));
+                                        expRate *= event.arg1;
+                                    }
+
+                                    eventId = eventVariables.size();
+                                    eventVariables.push_back(EventVariableInformation<ValueType>(expRate, storm::expressions::EventDistributionTypes::Exp));
+                                    eventNameToId[new_name] = eventId; 
+                                } else {
+                                    eventId = it->second;
+                                }
+
+                            } else {
+
+                                std::string const& eventName = choice.getEventNames()[0];
+                                auto it = eventNameToId.find(eventName);
+                                STORM_LOG_THROW(it != eventNameToId.end(), storm::exceptions::WrongFormatException, "internal error, event'" + eventName + "' not found in the map of events");
+
+                                eventId = it->second;
+                            }
+                                eventToStatesMapping[eventId][currentRowGroup] = currentRow;
+                                stateToEventsMapping[currentIndex].push_back(eventId);
                         }
                         
                         // Add the rewards to the reward models.
@@ -308,9 +379,13 @@ namespace storm {
             
             buildMatrices(transitionMatrixBuilder, rewardModelBuilders, choiceInformationBuilder, markovianStates);
             
-            // Initialize the model components with the obtained information.
+            // initialize the model components with the obtained information.
             storm::storage::sparse::ModelComponents<ValueType, RewardModelType> modelComponents(transitionMatrixBuilder.build(), buildStateLabeling(), std::unordered_map<std::string, RewardModelType>(), !generator->isDiscreteTimeModel(), std::move(markovianStates));
-            
+            modelComponents.eventVariables = std::move(eventVariables);
+            modelComponents.eventToStatesMapping = std::move(eventToStatesMapping);
+            modelComponents.stateToEventsMapping = std::move(stateToEventsMapping);
+            modelComponents.eventNameToId = std::move(eventNameToId);
+
             // Now finalize all reward models.
             for (auto& rewardModelBuilder : rewardModelBuilders) {
                 modelComponents.rewardModels.emplace(rewardModelBuilder.getName(), rewardModelBuilder.build(modelComponents.transitionMatrix.getRowCount(), modelComponents.transitionMatrix.getColumnCount(), modelComponents.transitionMatrix.getRowGroupCount()));
@@ -318,7 +393,7 @@ namespace storm {
             // Build the choice labeling
             modelComponents.choiceLabeling = choiceInformationBuilder.buildChoiceLabeling(modelComponents.transitionMatrix.getRowCount());
             
-            // If requested, build the state valuations and choice origins
+            // if requested, build the state valuations and choice origins
             if (generator->getOptions().isBuildStateValuationsSet()) {
                 std::vector<storm::expressions::SimpleValuation> valuations(modelComponents.transitionMatrix.getRowGroupCount());
                 for (auto const& bitVectorIndexPair : stateStorage.stateToId) {
@@ -336,7 +411,7 @@ namespace storm {
         
         template <typename ValueType, typename RewardModelType, typename StateType>
         storm::models::sparse::StateLabeling ExplicitModelBuilder<ValueType, RewardModelType, StateType>::buildStateLabeling() {
-            return generator->label(stateStorage, stateStorage.initialStateIndices, stateStorage.deadlockStateIndices);
+            return generator->label(stateStorage.stateToId, stateStorage.initialStateIndices, stateStorage.deadlockStateIndices);
         }
         
         // Explicitly instantiate the class.

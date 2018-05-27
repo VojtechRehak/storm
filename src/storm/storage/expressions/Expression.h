@@ -5,9 +5,11 @@
 #include <map>
 #include <unordered_map>
 #include <vector>
+#include <boost/optional.hpp>
 
 #include "storm/storage/expressions/BaseExpression.h"
 #include "storm/utility/OsDetection.h"
+#include "storm/storage/expressions/EventDistributionTypes.h"
 
 namespace storm {
     namespace expressions {
@@ -15,7 +17,6 @@ namespace storm {
         class ExpressionManager;
         class Variable;
         class ExpressionVisitor;
-        class CompiledExpression;
         
         class Expression {
         public:
@@ -57,9 +58,10 @@ namespace storm {
             friend Expression ceil(Expression const& first);
             friend Expression minimum(Expression const& first, Expression const& second);
             friend Expression maximum(Expression const& first, Expression const& second);
+            friend Expression distribution(EventDistributionTypes type, Expression const& first, boost::optional<Expression> const& second);
+
 
             Expression() = default;
-            ~Expression();
             
             /*!
              * Creates an expression representing the given variable.
@@ -143,6 +145,9 @@ namespace storm {
              * @return The double value of the expression under the given valuation.
              */
             storm::RationalNumber evaluateAsRational() const;
+
+
+            EventDistributionTypes getDistributionType() const;
             
             /*!
              * Simplifies the expression according to some basic rules.
@@ -337,6 +342,13 @@ namespace storm {
             bool hasBitVectorType() const;
             
             /*!
+             * Retrieves whether the expression has an nonlinear distribution return type.
+             *
+             * @return True iff the expression has a nonlinear distribution return type.
+             */
+            bool hasDistributionType() const;
+
+            /*!
              * Accepts the given visitor.
              *
              * @param visitor The visitor to accept.
@@ -360,29 +372,11 @@ namespace storm {
              */
             bool isSyntacticallyEqual(storm::expressions::Expression const& other) const;
             
-            /*!
-             * Retrieves whether this expression object has an associated compiled expression.
-             */
-            bool hasCompiledExpression() const;
-            
-            /*!
-             * Associates the given compiled expression with this expression object.
-             */
-            void setCompiledExpression(std::shared_ptr<CompiledExpression> const& compiledExpression) const;
-            
-            /*!
-             * Retrieves the associated compiled expression object (if there is any).
-             */
-            CompiledExpression const& getCompiledExpression() const;
-            
             friend std::ostream& operator<<(std::ostream& stream, Expression const& expression);
 
         private:
             // A pointer to the underlying base expression.
             std::shared_ptr<BaseExpression const> expressionPtr;
-            
-            // A pointer to an associated compiled expression object (if any).
-            mutable std::shared_ptr<CompiledExpression> compiledExpression;
         };
         
         // Provide operator overloads to conveniently construct new expressions from other expressions.
@@ -424,6 +418,8 @@ namespace storm {
         Expression conjunction(std::vector<storm::expressions::Expression> const& expressions);
         Expression sum(std::vector<storm::expressions::Expression> const& expressions);
         Expression apply(std::vector<storm::expressions::Expression> const& expressions, std::function<Expression (Expression const&, Expression const&)> const& function);
+        Expression distribution(EventDistributionTypes type, Expression const& first, boost::optional<Expression> const& second);
+        Expression distribution(EventDistributionTypes type, Expression const& first);
 
     }
 }

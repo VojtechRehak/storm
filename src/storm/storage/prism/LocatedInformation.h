@@ -11,7 +11,7 @@ namespace storm {
         class LocatedInformation {
         public:
             /*!
-             * Constructs a located information with the given filename and line number.
+             * Constructs a located informationL with the given filename and line number.
              *
              * @param filename The file in which the information was found.
              * @param lineNumber The line number in which the information was found.

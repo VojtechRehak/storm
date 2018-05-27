@@ -28,9 +28,12 @@ namespace storm {
             virtual std::size_t getNumberOfRewardModels() const override;
             virtual storm::builder::RewardModelInformation getRewardModelInformation(uint64_t const& index) const override;
             
-            virtual storm::models::sparse::StateLabeling label(storm::storage::sparse::StateStorage<StateType> const& stateStorage, std::vector<StateType> const& initialStateIndices = {}, std::vector<StateType> const& deadlockStateIndices = {}) override;
+            virtual storm::models::sparse::StateLabeling label(storm::storage::BitVectorHashMap<StateType> const& states, std::vector<StateType> const& initialStateIndices = {}, std::vector<StateType> const& deadlockStateIndices = {}) override;
 
             virtual std::shared_ptr<storm::storage::sparse::ChoiceOrigins> generateChoiceOrigins(std::vector<boost::any>& dataForChoiceOrigins) const override;
+
+            virtual void mapEvents(std::vector<EventVariableInformation<ValueType>>& eventVariables, std::unordered_map<std::string, uint_fast64_t>& eventNamesToId) const override;
+
 
         private:
             void checkValid() const;
@@ -84,17 +87,17 @@ namespace storm {
              * @return The labeled choices of the state.
              */
             std::vector<Choice<ValueType>> getLabeledChoices(CompressedState const& state, StateToIdCallback stateToIdCallback);
-            
+
             // The program used for the generation of next states.
             storm::prism::Program program;
             
             // The reward models that need to be considered.
             std::vector<std::reference_wrapper<storm::prism::RewardModel const>> rewardModels;
+
             
             // A flag that stores whether at least one of the selected reward models has state-action rewards.
             bool hasStateActionRewards;
         };
-        
     }
 }
 

@@ -4,6 +4,7 @@
 #include "storm/adapters/RationalFunctionAdapter.h"
 
 #include "storm/settings/SettingsManager.h"
+#include "storm/settings/modules/IOSettings.h"
 #include "storm/settings/modules/GeneralSettings.h"
 
 #include "storm/utility/constants.h"

@@ -1,0 +1,19 @@
+Each folder has a name MODEL_NAME and contains the following.
+- GSMP model in prism format MODEL_NAME.pm
+- file output.txt
+- file output_prism.txt
+
+output.txt is output produced by STORM extension, and has following format:
+1. model definition as STORM parsed it
+2. for every event: event definition and transition matrix for that event 
+2. final transition matrix for the model 
+
+
+Format of PRISM output:
+- Text file of name "output_prism" with raw output of the following sequence of PRISM GUI operations for model MODEL_NAME:
+	- model -> view -> states,
+	- model -> view -> transition matrix,
+	- model -> view -> state rewards,
+	- model -> view -> transition rewards,
+	- model -> view -> labels.
+

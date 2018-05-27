@@ -10,6 +10,7 @@
 #include "storm/models/sparse/Dtmc.h"
 #include "storm/models/sparse/Ctmc.h"
 #include "storm/models/sparse/Mdp.h"
+#include "storm/models/sparse/Gsmp.h"
 #include "storm/models/sparse/MarkovAutomaton.h"
 #include "storm/models/sparse/StochasticTwoPlayerGame.h"
 #include "storm/models/sparse/StandardRewardModel.h"
@@ -114,6 +115,8 @@ namespace storm {
                     return std::make_shared<storm::models::sparse::MarkovAutomaton<ValueType, RewardModelType>>(std::move(components));
                 case storm::models::ModelType::S2pg:
                     return std::make_shared<storm::models::sparse::StochasticTwoPlayerGame<ValueType, RewardModelType>>(std::move(components));
+                case storm::models::ModelType::Gsmp:
+                    return std::make_shared<storm::models::sparse::Gsmp<ValueType, RewardModelType>>(std::move(components));
             }
 
         }

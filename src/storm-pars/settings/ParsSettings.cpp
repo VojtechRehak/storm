@@ -1,4 +1,3 @@
-#include <storm/settings/modules/CounterexampleGeneratorSettings.h>
 #include "storm-pars/settings/ParsSettings.h"
 
 #include "storm-pars/settings/modules/ParametricSettings.h"
@@ -8,7 +7,6 @@
 #include "storm/settings/modules/GeneralSettings.h"
 #include "storm/settings/modules/CoreSettings.h"
 #include "storm/settings/modules/IOSettings.h"
-#include "storm/settings/modules/BuildSettings.h"
 #include "storm/settings/modules/DebugSettings.h"
 #include "storm/settings/modules/SylvanSettings.h"
 #include "storm/settings/modules/EigenEquationSolverSettings.h"
@@ -35,10 +33,7 @@ namespace storm {
             storm::settings::addModule<storm::settings::modules::CoreSettings>();
             storm::settings::addModule<storm::settings::modules::ParametricSettings>();
             storm::settings::addModule<storm::settings::modules::RegionSettings>();
-            storm::settings::addModule<storm::settings::modules::BuildSettings>();
-            storm::settings::addModule<storm::settings::modules::CounterexampleGeneratorSettings>();
-
-
+            
             storm::settings::addModule<storm::settings::modules::DebugSettings>();
             storm::settings::addModule<storm::settings::modules::SylvanSettings>();
             storm::settings::addModule<storm::settings::modules::GmmxxEquationSolverSettings>();

@@ -136,6 +136,13 @@ namespace storm {
              */
             bool hasNumericalType() const;
 
+            /*!
+             * Checks whether the variable is of nonlinear distribution type.
+             *
+             * @return True iff the variable if of nonlinear distribution type.
+             */
+            bool hasEventDistributionType() const;
+
         private:
             // The manager that is responsible for this variable.
             std::shared_ptr<ExpressionManager const> manager;

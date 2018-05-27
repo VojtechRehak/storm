@@ -17,7 +17,10 @@ namespace storm {
                 return ModelType::MarkovAutomaton;
             } else if (type == "S2PG") {
                 return ModelType::S2pg;
-            } else {
+            } else if (type == "GSMP") {
+                return ModelType::Gsmp;
+            }
+            else {
                 STORM_LOG_THROW(false, storm::exceptions::InvalidTypeException, "Type " << type << "not known.");
             }
         }
@@ -38,6 +41,9 @@ namespace storm {
                     break;
                 case ModelType::S2pg:
                     os << "S2PG";
+                    break;
+                case ModelType::Gsmp:
+                    os << "GSMP";
                     break;
                 default:
                     STORM_LOG_THROW(false, storm::exceptions::InvalidTypeException, "Unknown model type.");

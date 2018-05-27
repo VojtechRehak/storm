@@ -7,6 +7,7 @@
 #include "storm/storage/expressions/OperatorType.h"
 
 #include "storm/adapters/RationalNumberAdapter.h"
+#include "storm/storage/expressions/EventDistributionTypes.h"
 
 namespace storm {
     namespace expressions {
@@ -199,6 +200,20 @@ namespace storm {
                 }
             };
 
+            struct distributionOperatorStruct : qi::symbols<char, storm::expressions::EventDistributionTypes> {
+                distributionOperatorStruct() {
+                    add
+                    ("exponential", storm::expressions::EventDistributionTypes::Exp)
+                    ("weibull", storm::expressions::EventDistributionTypes::Weibull)
+                    ("uniform", storm::expressions::EventDistributionTypes::Uniform)
+                    ("erlang", storm::expressions::EventDistributionTypes::Erlang)
+                    ("dirac", storm::expressions::EventDistributionTypes::Dirac);
+                }
+            };
+
+            // parser for regognizing operators at the distributions precendence level
+            distributionOperatorStruct distributionOperatorStruct_;
+
             // A parser used for recognizing the operators at the "power" precedence level.
             prefixPowerOperatorStruct prefixPowerOperator_;
             
@@ -227,6 +242,9 @@ namespace storm {
             qi::rule<Iterator, storm::expressions::Expression(), qi::locals<storm::expressions::OperatorType>, Skipper> minMaxExpression;
             qi::rule<Iterator, storm::expressions::Expression(), qi::locals<storm::expressions::OperatorType>, Skipper> floorCeilExpression;
             qi::rule<Iterator, std::string(), Skipper> identifier;
+            // roman code
+            qi::rule<Iterator, storm::expressions::Expression(), qi::locals<bool>, Skipper> distributionExpression;
+
             
             // Parser that is used to recognize doubles only (as opposed to Spirit's double_ parser).
             boost::spirit::qi::real_parser<storm::RationalNumber, RationalPolicies<storm::RationalNumber>> rationalLiteral_;

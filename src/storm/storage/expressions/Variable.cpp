@@ -71,5 +71,10 @@ namespace storm {
         bool Variable::hasNumericalType() const {
             return this->getType().isNumericalType();
         }
+
+        bool Variable::hasEventDistributionType() const{
+            return this->getType().isEventDistributionType();
+
+        }
     }
 }

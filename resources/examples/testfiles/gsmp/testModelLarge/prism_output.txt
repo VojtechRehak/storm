@@ -1,0 +1,57 @@
+Exporting list of reachable states in plain text format below:
+(s,d,dk,dk3)
+0:(0,0,0,0)
+1:(1,0,0,0)
+2:(1,0,1,1)
+3:(2,0,0,0)
+4:(3,0,0,0)
+5:(3,0,1,1)
+6:(4,0,0,0)
+7:(4,0,1,1)
+8:(5,0,0,0)
+9:(6,0,0,0)
+10:(7,1,0,0)
+11:(7,1,1,1)
+12:(7,2,0,0)
+13:(7,2,1,1)
+14:(7,3,0,0)
+15:(7,3,1,1)
+16:(7,4,0,0)
+17:(7,5,0,0)
+18:(7,6,0,0)
+
+Exporting transition matrix in plain text format below:
+GSMP with 12 events:
+Event "<CTMCevent_[] s=3-> 0.5 : (s'=1) + 0.5 : (s'=7) & (d'=1)>"=Exponential distribution(1.0)
+4: {1=0.5, 10=0.5}, 5: {2=0.5, 11=0.5}
+Event "<[<[expEventUsedMultipleTimes]PRODUCT_WITH[secondModEvent]>]PRODUCT_WITH[thirdModEvent]>"=Exponential distribution(663054.848)
+0: {2=1.0}
+Event "<CTMCevent_[] s=0-> 0.5 : (s'=1) + 0.5 : (s'=2)>"=Exponential distribution(1.0)
+0: {1=0.5, 3=0.5}
+Event "<CTMCevent_[] s=7-> (s'=7)>"=Exponential distribution(1.0)
+10: {10=1.0}, 11: {11=1.0}, 12: {12=1.0}, 13: {13=1.0}, 14: {14=1.0}, 15: {15=1.0}, 16: {16=1.0}, 17: {17=1.0}, 18: {18=1.0}
+Event "<CTMCevent_[] s=4-> 0.5 : (s'=7) & (d'=2) + 0.5 : (s'=7) & (d'=3)>"=Exponential distribution(1.0)
+6: {12=0.5, 14=0.5}, 7: {13=0.5, 15=0.5}
+Event "<CTMCevent_[] s=5-> 0.5 : (s'=7) & (d'=4) + 0.5 : (s'=7) & (d'=5)>"=Exponential distribution(1.0)
+8: {16=0.5, 17=0.5}
+Event "<[secondModEvent]PRODUCT_WITH[thirdModEvent]>"=Exponential distribution(7603.84)
+3: {2=1.0}
+Event "<CTMCevent_[] s=2-> 0.5 : (s'=5) + 0.5 : (s'=6)>"=Exponential distribution(1.0)
+3: {8=0.5, 9=0.5}
+Event "<[secondModEventDirect]PRODUCT_WITH[thirdModEventDirect]>"=Exponential distribution(16.0)
+2: {1=1.0}, 5: {4=1.0}, 7: {6=1.0}, 11: {10=1.0}, 13: {12=1.0}, 15: {14=1.0}
+Event "testEventDirectUsed"=Dirac distribution(4.0)
+1: {1=1.0}, 2: {2=1.0}
+Event "<CTMCevent_[] s=1-> 0.5 : (s'=3) + 0.5 : (s'=4)>"=Exponential distribution(1.0)
+1: {4=0.5, 6=0.5}, 2: {5=0.5, 7=0.5}
+Event "<CTMCevent_[] s=6-> 0.5 : (s'=2) + 0.5 : (s'=7) & (d'=6)>"=Exponential distribution(1.0)
+9: {18=0.5, 3=0.5}
+
+Omitting state reward export as there are no reward structures
+
+Omitting transition reward export as there are no reward structures
+
+Exporting labels and satisfying states in plain text format below:
+0="init" 1="deadlock"
+0: 0
+

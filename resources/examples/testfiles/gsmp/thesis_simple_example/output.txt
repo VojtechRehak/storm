@@ -1,0 +1,69 @@
+gsmp
+const int maxItem = 3;
+const distribution Prod_dist = Dirac(10);
+
+
+
+module Queue
+	items: [0..3] init 0;
+	event Prod_e = Dirac(10);
+	event Serve_e = Weibull(12, 2);
+	[production] (items < 3) --Prod_e -> 1 : (items' = (items + 1));
+	[consumption] (items > 0) --Serve_e -> 1 : (items' = (items - 1));
+endmodule
+
+rewards
+	(items > 0): items;
+	[production] true: 1;
+endrewards
+
+
+Serve_e= Weibull(12, 2)
+
+		0	1	2	
+	---- group 0/3 ---- 
+0	(	0	0	0		)	0
+	---- group 1/3 ---- 
+1	(	1	0	0		)	1
+	---- group 2/3 ---- 
+2	(	0	1	0		)	2
+	---- group 3/3 ---- 
+3	(	0	0	1		)	3
+		0	1	2	
+
+Prod_e= Dirac(10)
+
+		0	1	2	3	
+	---- group 0/2 ---- 
+0	(	0	1	0	0		)	0
+	---- group 1/2 ---- 
+1	(	0	0	1	0		)	1
+	---- group 2/2 ---- 
+2	(	0	0	0	1		)	2
+		0	1	2	3	
+
+Time for model construction: 0.218s.
+
+-------------------------------------------------------------- 
+Model type: 	GSMP (sparse)
+States: 	4
+Transitions: 	6
+matrix: 			0	1	2	3	
+	---- group 0/3 ---- 
+0	(	0	1	0	0		)	0
+	---- group 1/3 ---- 
+1	(	0	0	1	0		)	1
+2	(	1	0	0	0		)	2
+	---- group 2/3 ---- 
+3	(	0	0	0	1		)	3
+4	(	0	1	0	0		)	4
+	---- group 3/3 ---- 
+5	(	0	0	1	0		)	5
+		0	1	2	3	
+
+Reward Models:  (default)
+State Labels: 	2 labels
+   * deadlock -> 0 item(s)
+   * init -> 1 item(s)
+Choice Labels: 	none
+-------------------------------------------------------------- 

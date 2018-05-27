@@ -1,0 +1,82 @@
+gsmp
+const int K = 10;
+const int N = 5;
+const double THINKING_RATE = 9/10;
+
+
+
+module asIsMD1NKqueue
+	thinkingCustomers: [0..10] init 10;
+	queueSize: [0..5] init 0;
+	serving: [0..1] init 0;
+	event service = Dirac(1);
+	event _x0 = Exponential((9/10 * thinkingCustomers));
+	[thinking] ((thinkingCustomers > 0) & (queueSize < 5)) --_x0 -> ((9/10 * thinkingCustomers) / (9/10 * thinkingCustomers)) : (thinkingCustomers' = (thinkingCustomers - 1)) & (queueSize' = (queueSize + 1)) & (serving' = 1);
+	[serving] (queueSize > 1) --service -> 1 : (thinkingCustomers' = (thinkingCustomers + 1)) & (queueSize' = (queueSize - 1));
+	[servingLast] (queueSize = 1) --service -> 1 : (thinkingCustomers' = (thinkingCustomers + 1)) & (queueSize' = (queueSize - 1)) & (serving' = 0);
+endmodule
+
+
+_x0= Exponential(0)
+
+		0	1	2	3	4	5	
+	---- group 0/4 ---- 
+0	(	0	1	0	0	0	0		)	0
+	---- group 1/4 ---- 
+1	(	0	0	1	0	0	0		)	1
+	---- group 2/4 ---- 
+2	(	0	0	0	1	0	0		)	2
+	---- group 3/4 ---- 
+3	(	0	0	0	0	1	0		)	3
+	---- group 4/4 ---- 
+4	(	0	0	0	0	0	1		)	4
+		0	1	2	3	4	5	
+
+service= Dirac(1)
+
+		0	1	2	3	4	
+	---- group 0/5 ---- 
+0	(	0	0	0	0	0		)	0
+	---- group 1/5 ---- 
+1	(	1	0	0	0	0		)	1
+	---- group 2/5 ---- 
+2	(	0	1	0	0	0		)	2
+	---- group 3/5 ---- 
+3	(	0	0	1	0	0		)	3
+	---- group 4/5 ---- 
+4	(	0	0	0	1	0		)	4
+	---- group 5/5 ---- 
+5	(	0	0	0	0	1		)	5
+		0	1	2	3	4	
+
+Time for model construction: 0.111s.
+
+-------------------------------------------------------------- 
+Model type: 	GSMP (sparse)
+States: 	6
+Transitions: 	10
+matrix: 			0	1	2	3	4	5	
+	---- group 0/5 ---- 
+0	(	0	1	0	0	0	0		)	0
+	---- group 1/5 ---- 
+1	(	0	0	1	0	0	0		)	1
+2	(	1	0	0	0	0	0		)	2
+	---- group 2/5 ---- 
+3	(	0	0	0	1	0	0		)	3
+4	(	0	1	0	0	0	0		)	4
+	---- group 3/5 ---- 
+5	(	0	0	0	0	1	0		)	5
+6	(	0	0	1	0	0	0		)	6
+	---- group 4/5 ---- 
+7	(	0	0	0	0	0	1		)	7
+8	(	0	0	0	1	0	0		)	8
+	---- group 5/5 ---- 
+9	(	0	0	0	0	1	0		)	9
+		0	1	2	3	4	5	
+
+Reward Models:  none
+State Labels: 	2 labels
+   * deadlock -> 0 item(s)
+   * init -> 1 item(s)
+Choice Labels: 	none
+-------------------------------------------------------------- 

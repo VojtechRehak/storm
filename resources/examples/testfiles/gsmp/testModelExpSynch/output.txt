@@ -1,0 +1,82 @@
+gsmp
+const int defConstant = 5;
+const double timeout = 29/2;
+const distribution expDistr = Exponential(5);
+const distribution diracDistr = Dirac(29/2);
+const distribution exp2 = Exponential(12);
+
+
+
+module firstModule
+	first: [0..1] init 0;
+	event firstModEvent = Exponential(5);
+	event timeoutEvent = Dirac(29/2);
+	[lol] (first = 0) --firstModEvent -> 1 : (first' = 1);
+	[timeout] (first = 1) --timeoutEvent -> 1 : (first' = 0);
+endmodule
+
+module secondModule
+	second: [0..6] init 0;
+	event secondModEvent = Exponential(12);
+	[lol] (second = 0) --secondModEvent -> 1 : (second' = 1);
+	[timeout] (second = 1) --slave -> 1 : (second' = 0);
+endmodule
+
+module thirdModule
+	third: [0..1] init 0;
+	event _x0 = Exponential(5);
+	[lol] (third = 0) --_x0 -> (5 / 5) : (third' = 1);
+	[timeout] (third = 1) --slave -> 1 : (third' = 0);
+endmodule
+
+
+firstModEvent X secondModEvent X _x0= Exponential(300)
+
+		0	1	
+	---- group 0/0 ---- 
+0	(	0	1		)	0
+		0	1	
+
+secondModEvent= Exponential(12)
+
+		
+		
+
+_x0= Exponential(5)
+
+		
+		
+
+timeoutEvent= Dirac(14.5)
+
+		0	
+	---- group 0/1 ---- 
+0	(	0		)	0
+	---- group 1/1 ---- 
+1	(	1		)	1
+		0	
+
+firstModEvent= Exponential(5)
+
+		
+		
+
+Time for model construction: 0.118s.
+
+-------------------------------------------------------------- 
+Model type: 	GSMP (sparse)
+States: 	2
+Transitions: 	2
+matrix: 			0	1	
+	---- group 0/1 ---- 
+0	(	0	1		)	0
+	---- group 1/1 ---- 
+1	(	1	0		)	1
+		0	1	
+
+Reward Models:  none
+State Labels: 	2 labels
+   * deadlock -> 0 item(s)
+   * init -> 1 item(s)
+Choice Labels: 	none
+-------------------------------------------------------------- 
